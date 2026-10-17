@@ -39,12 +39,6 @@ open prototype/index.html
 python3 -m http.server 8000   # then visit http://localhost:8000/prototype/
 ```
 
-## Using this repo with Lovable
-
-The repo is intentionally minimal (no app scaffold yet) so Lovable can generate the project in the root. Suggested first prompt:
-
-> Build a React + TypeScript app that reproduces the clickable prototype in `prototype/index.html`, following the requirements in `docs/Enterprise-Feature-Store-PRD.html`. Use mock data first; keep screens: Home, Repository, Domain, Dataset builder, Version summary, Feature detail, Atlas panel.
-
 Repo settings for the link:
 - `.gitattributes` marks `docs/` and `prototype/` as documentation so GitHub language stats reflect the real app code once Lovable adds it.
 - `.gitignore` covers Node/Vite/env/editor files that Lovable-generated code produces.
