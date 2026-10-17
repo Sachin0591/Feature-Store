@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nexus Feature Store · Portfolio Prototype</title>
+<style>
+  :root{
+    --orange:#4F6BF4;--orange-soft:#EEF1FE;--orange-dark:#3B55E0;
+    --navy:#131C35;--ink:#1E2433;--muted:#6B7280;
+    --line:#E5E7EB;--line-soft:#F1F3F6;--bg-soft:#F8F9FB;--bg-softer:#FCFCFD;
+    --blue-soft:#E6ECF6;--blue-mid:#C7D2E8;
+    --green:#10B981;--green-soft:#DCFCE7;--green-dark:#047857;
+    --yellow:#F59E0B;--yellow-soft:#FEF3C7;
+    --red:#EF4444;--red-soft:#FEE2E2;
+    --purple:#8B5CF6;--purple-soft:#EDE9FE;
+    --tera:#4F6BF4;--tera-soft:#EEF1FE;--dim:#9CA3AF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,sans-serif;color:var(--ink);background:#E9ECF1;-webkit-font-smoothing:antialiased;font-size:14px;}
+
+  .app{display:flex;flex-direction:column;height:100vh;background:#fff;position:relative;overflow:hidden;}
+  .topbar{display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--line);background:#fff;height:58px;flex-shrink:0;z-index:20;}
+  .hamburger{font-size:19px;color:var(--ink);margin-right:18px;cursor:pointer;}
+  .brand{color:var(--orange);font-weight:800;font-size:20px;letter-spacing:-0.4px;}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+  .icon-btn{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);font-size:13px;color:var(--muted);background:#fff;cursor:pointer;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+
+  .body{display:flex;flex:1;overflow:hidden;}
+  .nav{width:216px;border-right:1px solid var(--line);background:#fff;padding:14px 12px;flex-shrink:0;overflow:auto;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;color:var(--ink);font-size:13.5px;cursor:pointer;margin-bottom:1px;}
+  .nav-item .glyph{width:18px;text-align:center;color:var(--muted);font-size:14px;font-weight:700;}
+  .nav-item.active{background:var(--blue-soft);color:var(--navy);font-weight:600;}
+  .nav-item.active .glyph{color:var(--navy);}
+  .nav-item:hover:not(.active){background:var(--line-soft);}
+  .nav-child{padding:7px 12px 7px 42px;font-size:12.5px;color:var(--muted);border-radius:8px;cursor:pointer;margin-bottom:1px;}
+  .nav-child.active{color:var(--orange);font-weight:600;background:var(--orange-soft);}
+  .nav-child:hover:not(.active){background:var(--line-soft);color:var(--ink);}
+  .beta{background:var(--orange);color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700;letter-spacing:.5px;}
+  .tera-glyph{color:var(--tera)!important;}
+
+  .main{flex:1;display:flex;overflow:hidden;position:relative;}
+  .content{flex:1;overflow:auto;padding:30px 42px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .breadcrumb{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+  .breadcrumb a{color:var(--orange);text-decoration:none;cursor:pointer;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .breadcrumb .sep{color:var(--line);}
+  .page-title{font-size:26px;font-weight:800;color:var(--navy);margin-bottom:5px;letter-spacing:-.5px;}
+  .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .section-h{font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.6px;}
+  .section-h a{color:var(--orange);font-size:11.5px;font-weight:600;text-decoration:none;cursor:pointer;}
+
+  /* HOME jump back in */
+  .jump-strip{display:flex;gap:12px;margin-bottom:34px;}
+  .jump-card{flex:1;border:1px solid var(--line);border-radius:11px;padding:14px 16px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s;}
+  .jump-card:hover{border-color:var(--orange);box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .jump-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+  .jump-icon.d{background:var(--purple-soft);color:#5B21B6;}.jump-icon.f{background:var(--blue-soft);color:var(--navy);}
+  .jump-body{min-width:0;flex:1;}
+  .jump-name{font-size:12.5px;font-weight:600;color:var(--navy);font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .jump-meta{font-size:10.5px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px;}
+  .jump-repo{background:var(--bg-soft);color:var(--muted);font-size:9.5px;padding:1px 6px;border-radius:3px;font-weight:600;}
+
+  .repos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:16px;}
+  .repo-card{border:1px solid var(--line);border-radius:14px;padding:22px;background:#fff;cursor:pointer;transition:all .18s ease;position:relative;}
+  .repo-card:hover{border-color:var(--orange);box-shadow:0 8px 20px rgba(0,0,0,.08);transform:translateY(-2px);}
+  .repo-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+  .repo-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;}
+  .repo-icon.fraud{background:#FEE2E2;color:#991B1B;}.repo-icon.mkt{background:#FEF3C7;color:#92400E;}
+  .repo-icon.risk{background:#E0E7FF;color:#3730A3;}.repo-icon.cust{background:#DBEAFE;color:#1E40AF;}
+  .repo-name{font-weight:800;font-size:16.5px;color:var(--navy);letter-spacing:-.3px;}
+  .repo-last{font-size:11px;color:var(--muted);margin-top:3px;}
+  .repo-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:16px;min-height:38px;}
+  .repo-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line-soft);padding-top:14px;}
+  .repo-domains{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink);}
+  .repo-domains b{color:var(--navy);font-weight:700;}
+  .repo-enter{color:var(--orange);font-size:12px;font-weight:700;}
+  .explore-more{display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line);border-radius:12px;padding:14px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:600;margin-bottom:34px;transition:all .15s;}
+  .explore-more:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-soft);}
+  .all-repos{display:none;margin-bottom:34px;}.all-repos.show{display:block;}
+  .ar-search{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;background:#fff;margin-bottom:12px;font-size:12.5px;}
+  .ar-search input{border:none;outline:none;flex:1;font-size:12.5px;background:transparent;}
+  .ar-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:#fff;cursor:pointer;transition:all .15s;}
+  .ar-row:hover{border-color:var(--orange);}.ar-row.hidden{display:none;}
+  .ar-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
+  .ar-body{flex:1;min-width:0;}.ar-name{font-weight:700;font-size:13.5px;color:var(--navy);}.ar-desc{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .ar-domains{font-size:12px;color:var(--muted);}.ar-domains b{color:var(--navy);}
+
+  .get-started{border:1px dashed var(--line);border-radius:12px;padding:20px 24px;background:var(--bg-softer);}
+  .gs-title{font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px;}
+  .gs-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+  .gs-steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+  .gs-step{display:flex;gap:11px;align-items:flex-start;}
+  .gs-num{width:24px;height:24px;border-radius:50%;background:var(--orange-soft);color:var(--orange);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .gs-step-title{font-size:12.5px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+  .gs-step-desc{font-size:11.5px;color:var(--muted);line-height:1.5;}
+
+  /* repo page */
+  .repo-header{display:flex;align-items:center;gap:16px;margin-bottom:8px;}
+  .rh-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;}
+  .rh-title{font-size:24px;font-weight:800;color:var(--navy);letter-spacing:-.4px;}
+  .rh-sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .repo-search-wrap{margin:22px 0 26px;position:relative;}
+  .big-search{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.03);transition:all .15s;}
+  .big-search:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft);}
+  .big-search input{border:none;outline:none;flex:1;font-size:15px;background:transparent;color:var(--ink);}
+  .big-search input::placeholder{color:var(--dim);}
+  .big-search .scope-tag{font-size:11px;color:var(--muted);background:var(--bg-soft);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-weight:600;white-space:nowrap;}
+  .search-hint{font-size:11.5px;color:var(--muted);margin-top:8px;padding-left:4px;}
+  .search-hint b{color:var(--navy);}
+  /* live suggestions dropdown */
+  .suggest{position:absolute;top:60px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);z-index:70;display:none;overflow:hidden;}
+  .suggest.show{display:block;}
+  .suggest-head{padding:9px 16px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--bg-softer);border-bottom:1px solid var(--line-soft);}
+  .suggest-row{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--line-soft);}
+  .suggest-row:last-child{border-bottom:none;}
+  .suggest-row:hover{background:var(--bg-softer);}
+  .sg-name{font-weight:600;color:var(--navy);font-size:13px;font-family:ui-monospace,monospace;flex:1;}
+  .sg-name mark{background:#FEF3C7;padding:0 2px;border-radius:2px;font-weight:700;}
+  .sg-type{background:var(--line-soft);color:var(--muted);font-size:9px;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .sg-domain{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.3px;}
+  .sg-domain.cust{background:#DBEAFE;color:#1E40AF;}.sg-domain.txn{background:#DCFCE7;color:#047857;}.sg-domain.mer{background:#EDE9FE;color:#5B21B6;}.sg-domain.acct{background:#FCE7F3;color:#9D174D;}
+  .suggest-foot{padding:10px 16px;font-size:11.5px;color:var(--orange);font-weight:600;cursor:pointer;text-align:center;background:var(--bg-softer);}
+
+  .domains{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:15px;}
+  .domain-card{border:1px solid var(--line);border-radius:13px;padding:20px;background:#fff;cursor:pointer;transition:all .18s ease;}
+  .domain-card:hover{border-color:var(--orange);box-shadow:0 6px 16px rgba(0,0,0,.07);transform:translateY(-2px);}
+  .dc-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;margin-bottom:13px;}
+  .dc-icon.cust{background:#DBEAFE;color:#1E40AF;}.dc-icon.txn{background:#DCFCE7;color:#047857;}
+  .dc-icon.mer{background:#EDE9FE;color:#5B21B6;}.dc-icon.acct{background:#FCE7F3;color:#9D174D;}
+  .dc-name{font-weight:700;font-size:15.5px;color:var(--navy);margin-bottom:6px;}
+  .dc-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;min-height:36px;}
+  .dc-foot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border-top:1px solid var(--line-soft);padding-top:12px;}
+  .dc-foot b{color:var(--navy);font-weight:700;}
+
+  /* repo search results */
+  .sr-summary{background:#F3F6FB;border:1px solid var(--blue-soft);border-left:3px solid var(--navy);padding:12px 16px;border-radius:8px;font-size:12.5px;color:var(--navy);margin-bottom:18px;}
+  .sr-summary b{color:var(--orange);}
+  .sr-result{display:grid;grid-template-columns:1fr auto;gap:14px;padding:15px 18px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:#fff;cursor:pointer;transition:all .15s;align-items:center;}
+  .sr-result:hover{border-color:var(--orange);box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .sr-result.hidden{display:none;}
+  .sr-title{display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap;}
+  .sr-name{font-weight:600;color:var(--navy);font-size:14px;font-family:ui-monospace,monospace;}
+  .sr-type{background:var(--line-soft);color:var(--muted);font-size:9.5px;padding:2px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .sr-domain-badge{font-size:10px;padding:2px 9px;border-radius:4px;font-weight:700;letter-spacing:.3px;}
+  .sr-domain-badge.cust{background:#DBEAFE;color:#1E40AF;}.sr-domain-badge.txn{background:#DCFCE7;color:#047857;}.sr-domain-badge.mer{background:#EDE9FE;color:#5B21B6;}.sr-domain-badge.acct{background:#FCE7F3;color:#9D174D;}
+  .sr-def{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:7px;}
+  .sr-meta{display:flex;gap:14px;font-size:11px;color:var(--muted);align-items:center;}
+  .sr-meta span{display:flex;align-items:center;gap:4px;}
+  .sr-meta .lbl{color:var(--dim);}.sr-meta .val{color:var(--ink);font-weight:500;}
+  .sr-go{color:var(--orange);font-size:12px;font-weight:700;white-space:nowrap;}
+
+  /* domain page */
+  .domain-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+  .domain-tab{padding:12px 20px;font-size:13.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-weight:500;margin-bottom:-1px;display:flex;align-items:center;gap:8px;}
+  .domain-tab.active{color:var(--navy);border-bottom-color:var(--orange);font-weight:700;}
+  .domain-tab .tcount{background:var(--line-soft);color:var(--muted);font-size:11px;padding:1px 8px;border-radius:999px;font-weight:700;}
+  .domain-tab.active .tcount{background:var(--orange-soft);color:var(--orange);}
+  .domain-tabcontent{display:none;}.domain-tabcontent.active{display:block;}
+  .search-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .search-box{flex:1;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px 16px;background:#fff;transition:all .15s;}
+  .search-box:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft);}
+  .search-box.filtering{border-color:var(--orange);}
+  .search-box input{border:none;outline:none;flex:1;font-size:14px;background:transparent;color:var(--ink);}
+  .search-box input::placeholder{color:var(--dim);}
+  .search-box .clear-x{color:var(--muted);cursor:pointer;padding:2px 6px;font-size:12px;border-radius:4px;}
+  .search-box .clear-x:hover{background:var(--line-soft);}
+  .filter-badge{background:var(--orange-soft);color:var(--orange);font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:.4px;}
+  .facet-row{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;position:relative;}
+  .facet-chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font-size:12px;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:7px;font-weight:500;position:relative;}
+  .facet-chip:hover{border-color:var(--navy);}
+  .facet-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .facet-chip .caret{font-size:8px;opacity:.7;}
+  .facet-chip.more{border-style:dashed;color:var(--muted);}
+  .facet-pop{position:absolute;top:40px;left:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.14);padding:6px;min-width:210px;z-index:60;display:none;}
+  .facet-pop.show{display:block;}
+  .fp-opt{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;}
+  .fp-opt:hover{background:var(--bg-soft);}
+  .fp-check{width:15px;height:15px;border:1px solid var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;}
+  .fp-opt.on .fp-check{background:var(--orange);border-color:var(--orange);}
+  .fp-opt .fp-count{margin-left:auto;font-size:11px;color:var(--muted);}
+  /* more filters popover panel */
+  .more-pop{position:absolute;top:40px;left:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);padding:16px;width:520px;z-index:70;display:none;}
+  .more-pop.show{display:block;}
+  .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .mg-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .mg-badge{background:var(--purple-soft);color:#5B21B6;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;}
+  .mg-opt{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;cursor:pointer;}
+  .mg-opt .fp-count{margin-left:auto;font-size:11px;color:var(--muted);}
+  .tt-input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:ui-monospace,monospace;margin-top:4px;}
+  .more-foot{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);}
+  .more-foot button{flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .mf-clear{border:1px solid var(--line);background:#fff;color:var(--ink);}
+  .mf-apply{border:none;background:var(--orange);color:#fff;}
+  .result-count{font-size:12px;color:var(--muted);margin-left:auto;}
+  .result-count b{color:var(--navy);}
+
+  .entity-block{border:1px solid var(--line);border-radius:11px;margin-bottom:12px;overflow:hidden;background:#fff;}
+  .entity-block.hidden{display:none;}
+  .entity-header{display:flex;align-items:center;gap:11px;padding:13px 17px;background:var(--bg-softer);border-bottom:1px solid var(--line);cursor:pointer;}
+  .entity-header.collapsed{border-bottom:none;}
+  .entity-header .chevron{color:var(--muted);font-size:10px;width:10px;transition:transform .15s;}
+  .entity-header.collapsed .chevron{transform:rotate(-90deg);}
+  .entity-header .ent-icon{width:27px;height:27px;border-radius:7px;background:var(--blue-soft);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+  .entity-header .ent-name{font-weight:700;color:var(--navy);font-size:14px;font-family:ui-monospace,monospace;}
+  .entity-header .ent-count{background:var(--line-soft);color:var(--ink);font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;}
+  .entity-header .ent-match{background:var(--orange-soft);color:var(--orange);font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;}
+  .entity-header .ent-meta{font-size:11px;color:var(--muted);margin-left:auto;}
+  .entity-body.collapsed{display:none;}
+  .feature-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:13px 20px;cursor:pointer;border-bottom:1px solid var(--line-soft);align-items:center;transition:background .3s;}
+  .feature-row:last-child{border-bottom:none;}
+  .feature-row:hover{background:#F0F3FF;}
+  .feature-row.selected{background:#F0F3FF;box-shadow:inset 3px 0 0 var(--orange);}
+  .feature-row.hidden{display:none;}
+  .feature-row.flash{background:var(--orange-soft);box-shadow:inset 3px 0 0 var(--orange);}
+  .fr-title{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+  .fr-name{font-weight:600;color:var(--navy);font-size:13.5px;font-family:ui-monospace,monospace;}
+  .fr-type{background:var(--line-soft);color:var(--muted);font-size:9.5px;padding:2px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .fr-def{color:var(--muted);font-size:12px;line-height:1.45;margin-bottom:6px;}
+  .fr-meta{display:flex;gap:12px;font-size:11px;color:var(--muted);align-items:center;}
+  .fr-meta span{display:flex;align-items:center;gap:4px;}
+  .fr-meta .lbl{color:var(--dim);}.fr-meta .val{color:var(--ink);font-weight:500;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.green{background:var(--green);}.dot.yellow{background:var(--yellow);}
+  .fr-actions{display:flex;gap:6px;}
+  .fr-btn{padding:6px 13px;border-radius:7px;font-size:11.5px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);font-weight:600;}
+  .fr-btn.primary{border-color:var(--orange);background:var(--orange);color:#fff;}
+  .fr-btn.primary:hover{background:var(--orange-dark);}
+  .fr-btn.added{border-color:var(--green);background:var(--green-soft);color:var(--green-dark);}
+  .show-more-row{text-align:center;padding:11px 16px;font-size:11.5px;background:var(--bg-softer);}
+  .show-more-row a{color:var(--orange);text-decoration:none;cursor:pointer;font-weight:600;}
+  mark{background:#FEF3C7;color:inherit;padding:0 2px;border-radius:2px;font-weight:700;}
+  .zero-inline{text-align:center;padding:40px 20px;border:1px dashed var(--line);border-radius:12px;background:var(--bg-softer);display:none;}
+  .zero-inline.show{display:block;}
+  .zi-icon{font-size:34px;opacity:.3;margin-bottom:10px;}
+  .zi-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .zi-msg{font-size:12.5px;color:var(--muted);}
+
+  .ds-list-intro{font-size:12.5px;color:var(--muted);margin-bottom:16px;max-width:720px;line-height:1.55;}
+  .ds-card{border:1px solid var(--line);border-radius:11px;padding:16px 18px;background:#fff;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all .15s;}
+  .ds-card:hover{border-color:var(--orange);box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .ds-card-icon{width:38px;height:38px;border-radius:9px;background:var(--purple-soft);color:#5B21B6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;}
+  .ds-card-body{flex:1;min-width:0;}
+  .ds-card-name{font-weight:700;font-size:14px;color:var(--navy);font-family:ui-monospace,monospace;margin-bottom:3px;}
+  .ds-card-desc{font-size:12px;color:var(--muted);line-height:1.45;}
+  .ds-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+  .ds-trust{background:var(--green-soft);color:var(--green-dark);font-size:11px;padding:4px 10px;border-radius:999px;font-weight:700;}
+  .ds-card-meta{font-size:11px;color:var(--muted);}
+
+  .dataset-strip{position:absolute;bottom:0;left:0;right:0;height:64px;background:var(--navy);color:#fff;display:flex;align-items:center;padding:0 24px;gap:14px;z-index:40;box-shadow:0 -4px 16px rgba(0,0,0,.14);}
+  .ds-cart-icon{width:34px;height:34px;border-radius:9px;background:rgba(249,107,32,.2);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .ds-info{display:flex;flex-direction:column;gap:2px;min-width:150px;}
+  .ds-name-t{font-weight:600;font-size:13px;}.ds-count{font-size:11px;color:#9CA3AF;}.ds-scope{font-size:10px;color:var(--orange);font-family:ui-monospace,monospace;}
+  .ds-pills-mini{display:flex;gap:6px;flex:1;overflow:hidden;}
+  .ds-pill-mini{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 11px;font-size:11px;color:#E5E7EB;white-space:nowrap;display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;}
+  .ds-pill-mini .x{color:#9CA3AF;cursor:pointer;}
+  .ds-build-btn{padding:9px 18px;border-radius:9px;background:var(--orange);color:#fff;font-size:12.5px;font-weight:700;border:none;cursor:pointer;}
+  .ds-build-btn:hover{background:var(--orange-dark);}
+
+  .tera-fab{position:absolute;right:26px;bottom:84px;z-index:80;}
+  .tera-fab-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--tera) 0%,#7A93F7 100%);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 6px 20px rgba(79,107,244,.4);transition:all .2s;position:relative;}
+  .tera-fab-btn:hover{transform:scale(1.06);}
+  .tera-fab-label{position:absolute;right:66px;bottom:15px;background:var(--navy);color:#fff;font-size:12px;font-weight:600;padding:7px 13px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 12px rgba(0,0,0,.2);}
+  .tera-fab:hover .tera-fab-label{opacity:1;}
+  .tera-fab-pulse{position:absolute;inset:0;border-radius:50%;background:var(--tera);opacity:.35;animation:pulse 2.4s ease-out infinite;}
+  @keyframes pulse{0%{transform:scale(1);opacity:.35;}100%{transform:scale(1.7);opacity:0;}}
+
+  .overlay{position:absolute;inset:0;background:rgba(19,28,53,.28);z-index:100;display:none;}
+  .overlay.show{display:block;}
+  .slideover{position:absolute;top:0;right:0;height:100%;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 32px rgba(0,0,0,.14);display:none;flex-direction:column;z-index:101;}
+  .slideover.show{display:flex;}
+  #featurePanel{width:760px;}#datasetPanel{width:560px;}#teraPanel{width:480px;}
+  .so-header{padding:20px 26px 0;border-bottom:1px solid var(--line);}
+  .so-crumb{font-size:11.5px;color:var(--muted);margin-bottom:12px;}
+  .so-crumb .sep{color:var(--line);margin:0 6px;}.so-crumb b{color:var(--ink);}
+  .so-top{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
+  .so-name{font-size:19px;font-weight:800;color:var(--navy);font-family:ui-monospace,monospace;letter-spacing:-.5px;}
+  .so-type{background:var(--line-soft);color:var(--muted);font-size:10.5px;padding:3px 8px;border-radius:4px;font-weight:700;font-family:ui-monospace,monospace;}
+  .version-select{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:11px;background:#fff;color:var(--navy);font-family:ui-monospace,monospace;font-weight:600;cursor:pointer;}
+  .so-close{margin-left:auto;color:var(--muted);font-size:20px;cursor:pointer;padding:3px 9px;border-radius:6px;}
+  .so-close:hover{background:var(--line-soft);}
+  .so-actions{display:flex;gap:8px;margin-bottom:16px;}
+  .so-action{padding:9px 15px;border-radius:7px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:6px;}
+  .so-action.primary{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .so-tabs{display:flex;gap:2px;}
+  .so-tab{padding:11px 18px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-weight:500;}
+  .so-tab.active{color:var(--navy);border-bottom-color:var(--orange);font-weight:700;}
+  .so-body{flex:1;overflow:auto;padding:24px 26px;}
+  .so-tabcontent{display:none;}.so-tabcontent.active{display:block;}
+  .trust-3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:22px;}
+  .trust-tile{border:1px solid var(--line);border-radius:9px;padding:13px;background:var(--bg-softer);}
+  .tl-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:5px;}
+  .tl-val{font-size:14.5px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:6px;}
+  .blk{margin-bottom:22px;}
+  .blk-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:8px;}
+  .blk-body{font-size:13.5px;color:var(--ink);line-height:1.6;}
+  .code{background:var(--bg-soft);border:1px solid var(--line);border-radius:7px;padding:12px 15px;font-family:ui-monospace,monospace;font-size:11.5px;color:var(--navy);white-space:pre;overflow-x:auto;line-height:1.6;}
+  .produced-by{border:1px solid var(--line);border-radius:8px;padding:13px 15px;background:var(--bg-softer);}
+  .pb-name{font-weight:600;color:var(--navy);font-size:13px;margin-bottom:3px;font-family:ui-monospace,monospace;}
+  .pb-id{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--muted);margin-bottom:4px;}
+  .pb-meta{font-size:11.5px;color:var(--muted);}
+  .refresh-table{border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .refresh-row-t{display:grid;grid-template-columns:150px 90px 70px 1fr;padding:9px 14px;font-size:11.5px;border-bottom:1px solid var(--line-soft);align-items:center;}
+  .refresh-row-t:last-child{border-bottom:none;}
+  .rr-time{color:var(--muted);font-family:ui-monospace,monospace;font-size:11px;}
+  .rr-status{font-size:9.5px;padding:2px 7px;border-radius:3px;font-weight:700;letter-spacing:.3px;justify-self:start;}
+  .rr-status.ok{background:var(--green-soft);color:var(--green-dark);}
+  .rr-dur{color:var(--ink);font-family:ui-monospace,monospace;}.rr-lag{color:var(--muted);font-size:11px;}
+  .tag-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .tag-pill{background:var(--bg-soft);border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;color:var(--ink);font-weight:500;}
+  .stats-4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:20px;}
+  .stat-tile{border:1px solid var(--line);border-radius:8px;padding:14px 12px;text-align:center;}
+  .stat-val{font-size:20px;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-top:4px;}
+  .histogram-box{border:1px solid var(--line);border-radius:10px;padding:18px;background:var(--bg-softer);}
+  .lineage-box{border:1px solid var(--line);border-radius:10px;padding:20px;background:var(--bg-softer);}
+  .lineage-legend{display:flex;gap:16px;margin-bottom:14px;font-size:11.5px;color:var(--muted);}
+  .lineage-legend .lg{display:flex;align-items:center;gap:5px;}
+  .lg .lg-box{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .lg.src .lg-box{background:var(--blue-soft);border:1px solid var(--navy);}
+  .lg.tr .lg-box{background:var(--yellow-soft);border:1px solid var(--yellow);}
+  .lg.ft .lg-box{background:var(--orange-soft);border:1px solid var(--orange);}
+  .usage-strip3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:22px;}
+  .usage-card{border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center;}
+  .usage-num{font-size:22px;font-weight:800;color:var(--navy);}
+  .usage-lbl{font-size:10.5px;color:var(--muted);margin-top:4px;}
+  .item-row{display:flex;align-items:center;gap:11px;padding:10px 13px;border:1px solid var(--line-soft);border-radius:8px;font-size:12px;margin-bottom:6px;}
+  .ir-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+  .ir-icon.model{background:#DBEAFE;color:#1E40AF;}.ir-icon.dataset{background:var(--purple-soft);color:#5B21B6;}
+  .ir-body{flex:1;}.ir-name{font-weight:600;color:var(--navy);font-size:12.5px;font-family:ui-monospace,monospace;}
+  .ir-meta{font-size:10.5px;color:var(--muted);margin-top:1px;}.ir-open{color:var(--orange);font-size:11px;font-weight:600;cursor:pointer;}
+  .see-all{text-align:center;padding:7px;font-size:11.5px;}.see-all a{color:var(--orange);font-weight:600;text-decoration:none;cursor:pointer;}
+
+  .dp-header{padding:20px 24px;border-bottom:1px solid var(--line);position:relative;}
+  .dp-name{font-size:18px;font-weight:800;color:var(--navy);font-family:ui-monospace,monospace;margin-bottom:5px;}
+  .dp-desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;}
+  .dp-trust-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .dp-trust{background:var(--green-soft);color:var(--green-dark);font-size:11px;padding:5px 11px;border-radius:999px;font-weight:700;}
+  .dp-meta{background:var(--bg-soft);color:var(--muted);font-size:11px;padding:5px 11px;border-radius:999px;font-weight:500;}
+  .dp-selectbar{padding:12px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--bg-softer);}
+  .dp-selall{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);cursor:pointer;font-weight:600;}
+  .dp-selcount{margin-left:auto;font-size:12px;color:var(--muted);}
+  .dp-body{flex:1;overflow:auto;}
+  .dp-feat{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line-soft);cursor:pointer;}
+  .dp-feat:hover{background:var(--bg-softer);}
+  .dp-feat.disabled{opacity:.55;cursor:not-allowed;}.dp-feat.disabled:hover{background:transparent;}
+  .dp-check{width:18px;height:18px;border:1.5px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;}
+  .dp-feat.sel .dp-check{background:var(--orange);border-color:var(--orange);}
+  .dp-feat.disabled .dp-check{background:var(--green-soft);border-color:var(--green);color:var(--green-dark);}
+  .dp-fbody{flex:1;min-width:0;}
+  .dp-fname{font-weight:600;color:var(--navy);font-size:13px;font-family:ui-monospace,monospace;display:flex;align-items:center;gap:8px;}
+  .dp-ftype{background:var(--line-soft);color:var(--muted);font-size:9px;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .dp-fdef{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4;}
+  .dp-fnote{font-size:10.5px;color:var(--green-dark);font-weight:600;margin-left:auto;white-space:nowrap;}
+  .dp-foot{padding:16px 24px;border-top:1px solid var(--line);}
+  .dp-add-btn{width:100%;padding:12px;border:none;border-radius:9px;background:var(--orange);color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;}
+  .dp-add-btn:disabled{background:var(--line);color:var(--dim);cursor:not-allowed;}
+
+  .tera-header{padding:16px 20px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,var(--tera-soft) 0%,#F8F5FF 100%);display:flex;align-items:center;gap:12px;}
+  .th-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--tera) 0%,#7A93F7 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;}
+  .th-title{font-size:15px;font-weight:800;color:var(--navy);}.th-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .th-close{margin-left:auto;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:6px;}
+  .context-strip{background:var(--tera-soft);border-bottom:1px solid var(--line);padding:10px 20px;font-size:11.5px;color:var(--navy);display:flex;align-items:center;gap:8px;}
+  .context-strip b{color:var(--tera);}
+  .tera-body{flex:1;overflow:auto;padding:20px;}
+  .tera-msg{padding:12px 15px;border-radius:11px;margin-bottom:12px;font-size:13px;line-height:1.55;}
+  .tera-msg.user{background:var(--navy);color:#fff;margin-left:50px;border-bottom-right-radius:3px;}
+  .tera-msg.bot{background:var(--bg-soft);color:var(--ink);margin-right:30px;border-bottom-left-radius:3px;border:1px solid var(--line-soft);}
+  .tera-msg.bot b{color:var(--navy);}
+  .tera-step{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--tera-soft);border-radius:8px;font-size:11.5px;color:var(--tera);margin-bottom:12px;font-weight:500;}
+  .spinner{width:12px;height:12px;border:2px solid var(--blue-mid);border-top-color:var(--tera);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tera-fcard{background:#fff;border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:8px;}
+  .tf-title{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .tf-name{font-weight:600;color:var(--navy);font-size:12.5px;font-family:ui-monospace,monospace;}
+  .tf-type{background:var(--line-soft);color:var(--muted);font-size:9.5px;padding:2px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .tf-match{background:var(--tera-soft);color:var(--tera);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;margin-left:auto;}
+  .tf-def{font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+  .tf-actions{display:flex;gap:6px;}
+  .tf-btn{padding:5px 11px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);font-weight:600;}
+  .tf-btn.primary{border-color:var(--orange);background:var(--orange);color:#fff;}
+  .tera-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .tera-chip{background:#fff;border:1px solid var(--blue-mid);color:var(--tera);border-radius:999px;padding:6px 13px;font-size:11.5px;cursor:pointer;font-weight:500;}
+  .tera-chip:hover{background:var(--tera-soft);}
+  .tera-input-wrap{padding:14px 20px;border-top:1px solid var(--line);}
+  .tera-input{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;}
+  .tera-input input{border:none;outline:none;flex:1;font-size:13px;background:transparent;}
+  .tera-input .send-btn{background:var(--tera);color:#fff;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;}
+
+  .db-title-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .db-title-input{font-size:22px;font-weight:800;color:var(--navy);border:1px solid transparent;padding:4px 8px;border-radius:6px;outline:none;background:transparent;font-family:ui-monospace,monospace;min-width:340px;letter-spacing:-.5px;}
+  .db-title-input:hover{border-color:var(--line);}.db-title-input:focus{border-color:var(--orange);background:var(--orange-soft);}
+  .db-version-chip{background:var(--navy);color:#fff;font-family:ui-monospace,monospace;font-size:11px;padding:4px 9px;border-radius:5px;font-weight:700;}
+  .db-unsaved{background:var(--yellow-soft);color:#92400E;font-size:11px;padding:4px 9px;border-radius:5px;font-weight:700;letter-spacing:.3px;}
+  .db-subtitle{font-size:12.5px;color:var(--muted);padding-left:8px;margin-bottom:14px;}
+  .type-toggle{display:inline-flex;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:3px;}
+  .tt-option{padding:7px 17px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:999px;}
+  .tt-option.active{background:var(--navy);color:#fff;}
+  .db-block{border:1px solid var(--line);border-radius:11px;padding:18px 20px;background:#fff;margin-bottom:14px;}
+  .db-block-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+  .db-block-hint{text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim);font-size:10.5px;}
+  .feature-cart{display:flex;flex-wrap:wrap;gap:8px;}
+  .cart-pill{display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;}
+  .cp-name{font-weight:600;color:var(--navy);font-family:ui-monospace,monospace;}
+  .cp-type{background:var(--bg-soft);color:var(--muted);font-size:9px;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .cp-ent{color:var(--muted);font-size:10px;font-family:ui-monospace,monospace;}
+  .cp-ver{background:var(--navy);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-weight:700;}
+  .cp-x{color:var(--dim);cursor:pointer;padding:2px 4px;font-size:12px;}.cp-x:hover{color:var(--red);}
+  .cart-pill.add-more{border-style:dashed;color:var(--muted);cursor:pointer;}.cart-pill.add-more:hover{border-color:var(--orange);color:var(--orange);}
+  .join-card{border:1px solid var(--line-soft);border-radius:8px;padding:13px 15px;background:var(--bg-softer);display:flex;align-items:center;gap:12px;}
+  .jk-keys{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--navy);font-weight:600;margin-bottom:3px;}
+  .jk-note{font-size:11px;color:var(--muted);}.jk-override{color:var(--orange);font-size:11.5px;font-weight:600;cursor:pointer;margin-left:auto;}
+  .preview-options{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .po-field{display:flex;flex-direction:column;gap:5px;}
+  .po-label{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+  .po-input,.po-select{border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;background:#fff;color:var(--ink);cursor:pointer;min-width:150px;font-family:ui-monospace,monospace;}
+  .gen-preview-btn{padding:10px 20px;border-radius:8px;background:var(--navy);color:#fff;border:none;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .gen-preview-btn:hover{background:#1F2942;}
+  .preview-result{display:none;margin-top:16px;}.preview-result.show{display:block;}
+  .prev-table{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid var(--line-soft);border-radius:8px;overflow:hidden;}
+  .prev-table th{background:var(--bg-soft);padding:9px 11px;text-align:left;border-bottom:1px solid var(--line-soft);color:var(--navy);font-weight:700;font-size:10.5px;font-family:ui-monospace,monospace;}
+  .prev-table td{padding:8px 11px;border-bottom:1px solid var(--line-soft);color:var(--ink);font-family:ui-monospace,monospace;}
+  .prev-table tr:last-child td{border-bottom:none;}
+  .prev-table tr.fraud-row td{background:#FEF6F2;}
+  .prev-footer{font-size:11.5px;color:var(--muted);margin-top:8px;}.prev-footer b{color:var(--navy);}
+  .checkout-actions{display:flex;gap:10px;}
+  .co-btn{padding:12px 22px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .co-btn.primary{border-color:var(--orange);background:var(--orange);color:#fff;}.co-btn.primary:hover{background:var(--orange-dark);}
+  .co-note{font-size:11.5px;color:var(--muted);margin-top:10px;}
+  .def-callout{background:var(--blue-soft);border:1px solid var(--blue-mid);border-radius:9px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--navy);line-height:1.55;display:flex;gap:10px;}
+  .def-callout .di{font-size:15px;}.def-callout b{color:var(--navy);}
+  .collapsible{border:1px solid var(--line);border-radius:11px;margin-bottom:14px;overflow:hidden;}
+  .col-header{padding:14px 20px;display:flex;align-items:center;gap:11px;cursor:pointer;background:#fff;}
+  .col-header:hover{background:var(--bg-softer);}
+  .col-chevron{color:var(--muted);font-size:10px;transition:transform .15s;}
+  .collapsible.open .col-chevron{transform:rotate(90deg);}
+  .col-title{font-size:13px;font-weight:700;color:var(--navy);}.col-hint{font-size:11.5px;color:var(--muted);margin-left:auto;}
+  .col-body{display:none;padding:4px 20px 20px;background:var(--bg-softer);}.collapsible.open .col-body{display:block;}
+  .ver-item{display:flex;align-items:center;gap:12px;padding:11px 13px;background:#fff;border:1px solid var(--line-soft);border-radius:7px;font-size:12px;margin-bottom:6px;}
+  .vi-badge{background:var(--navy);color:#fff;font-family:ui-monospace,monospace;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
+  .vi-badge.current{background:var(--orange);}
+  .vi-summary{flex:1;color:var(--ink);}.vi-recipe{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);margin-top:2px;}
+  .vi-meta{color:var(--muted);font-size:11px;}.vi-actions{display:flex;gap:10px;}
+  .vi-actions a{color:var(--orange);text-decoration:none;cursor:pointer;font-weight:600;font-size:11px;}
+
+  .save-confirm{max-width:720px;margin:30px auto;}
+  .sc-hero{text-align:center;margin-bottom:28px;}
+  .sc-check{width:72px;height:72px;border-radius:50%;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 18px;}
+  .sc-title{font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;letter-spacing:-.4px;}
+  .sc-sub{font-size:14px;color:var(--muted);}
+  .sc-card{border:1px solid var(--line);border-radius:13px;background:#fff;overflow:hidden;margin-bottom:20px;}
+  .sc-card-head{background:var(--bg-soft);padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;}
+  .sc-card-icon{width:40px;height:40px;border-radius:9px;background:var(--purple-soft);color:#5B21B6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;}
+  .sc-card-name{font-size:16px;font-weight:800;color:var(--navy);font-family:ui-monospace,monospace;}
+  .sc-card-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .sc-newver{margin-left:auto;background:var(--green-soft);color:var(--green-dark);font-size:12px;padding:5px 12px;border-radius:999px;font-weight:700;font-family:ui-monospace,monospace;}
+  .sc-rows{padding:8px 22px;}
+  .sc-row{display:flex;padding:12px 0;border-bottom:1px solid var(--line-soft);font-size:13px;}
+  .sc-row:last-child{border-bottom:none;}
+  .sc-row .sc-k{width:180px;color:var(--muted);font-weight:500;flex-shrink:0;}
+  .sc-row .sc-v{color:var(--ink);font-weight:500;}
+  .sc-row .sc-v .mono{font-family:ui-monospace,monospace;font-size:12px;}
+  .sc-featpills{display:flex;flex-wrap:wrap;gap:6px;}
+  .sc-fp{background:var(--bg-soft);border:1px solid var(--line);border-radius:6px;padding:3px 9px;font-size:11px;font-family:ui-monospace,monospace;color:var(--navy);}
+  .sc-recipe-note{background:var(--blue-soft);border:1px solid var(--blue-mid);border-radius:10px;padding:14px 18px;font-size:12.5px;color:var(--navy);line-height:1.55;margin-bottom:24px;display:flex;gap:10px;}
+  .sc-actions{display:flex;gap:12px;justify-content:center;}
+  .sc-btn{padding:12px 24px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .sc-btn.primary{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .sc-btn.primary:hover{background:var(--orange-dark);}
+
+  .footer-note{text-align:center;color:#9CA3AF;font-size:11px;padding:9px;background:var(--navy);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <span class="hamburger">☰</span><span class="brand">nexus.</span>
+    <div class="right"><span class="icon-btn">?</span><span class="avatar">AI</span></div>
+  </div>
+  <div class="body">
+    <div class="nav">
+      <div class="nav-item"><span class="glyph">⌂</span> Home</div>
+      <div class="nav-item"><span class="glyph tera-glyph">✦</span> Atlas <span class="beta">BETA</span></div>
+      <div class="nav-item"><span class="glyph">▤</span> Notebooks <span class="beta">BETA</span></div>
+      <div class="nav-item"><span class="glyph">V</span> Vector store</div>
+      <div class="nav-item active"><span class="glyph">F</span> Feature store <span class="beta">BETA</span></div>
+      <div class="nav-child active" id="ncRepos" onclick="show('home')">Repositories</div>
+      <div class="nav-child" id="ncWork" onclick="show('builder')">My work</div>
+      <div class="nav-item"><span class="glyph">◈</span> ModelOps</div>
+      <div class="nav-item"><span class="glyph">≡</span> MCP server</div>
+      <div class="nav-item"><span class="glyph">▦</span> Integrations</div>
+    </div>
+    <div class="main">
+      <div class="content">
+
+        <!-- ============ HOME ============ -->
+        <div class="view active" id="v-home">
+          <div class="page-title">Welcome back, Arjun</div>
+          <div class="page-sub">Jump back into your work, or open a feature store repository.</div>
+          <div class="section-h">Jump back in</div>
+          <div class="jump-strip">
+            <div class="jump-card" onclick="show('builder')"><div class="jump-icon d">D</div><div class="jump-body"><div class="jump-name">fraud_scoring_v3</div><div class="jump-meta">Dataset · <span class="jump-repo">Fraud Analytics</span> · 3h ago</div></div></div>
+            <div class="jump-card" onclick="openRepo()"><div class="jump-icon f">F</div><div class="jump-body"><div class="jump-name">customer_avg_spend_30d</div><div class="jump-meta">Feature · <span class="jump-repo">Fraud Analytics</span> · 2h ago</div></div></div>
+            <div class="jump-card" onclick="openRepo()"><div class="jump-icon d">D</div><div class="jump-body"><div class="jump-name">churn_training_v2</div><div class="jump-meta">Dataset · <span class="jump-repo">Marketing Analytics</span> · yesterday</div></div></div>
+          </div>
+          <div class="section-h">Your repositories</div>
+          <div class="repos">
+            <div class="repo-card" onclick="openRepo()"><div class="repo-top"><div class="repo-icon fraud">FA</div><div><div class="repo-name">Fraud Analytics</div><div class="repo-last">Opened 3h ago</div></div></div><div class="repo-desc">Fraud, risk scoring and card-testing detection features. Owned by the Fraud &amp; Risk platform team.</div><div class="repo-foot"><div class="repo-domains"><b>4</b> domains</div><div class="repo-enter">Enter →</div></div></div>
+            <div class="repo-card" onclick="openRepo()"><div class="repo-top"><div class="repo-icon mkt">MA</div><div><div class="repo-name">Marketing Analytics</div><div class="repo-last">Opened yesterday</div></div></div><div class="repo-desc">Campaign response, segmentation and channel features for marketing and CRM models.</div><div class="repo-foot"><div class="repo-domains"><b>6</b> domains</div><div class="repo-enter">Enter →</div></div></div>
+            <div class="repo-card" onclick="openRepo()"><div class="repo-top"><div class="repo-icon cust">CI</div><div><div class="repo-name">Customer Intelligence</div><div class="repo-last">Opened 4 days ago</div></div></div><div class="repo-desc">Shared customer behaviour and value features used across churn, LTV and personalisation.</div><div class="repo-foot"><div class="repo-domains"><b>8</b> domains</div><div class="repo-enter">Enter →</div></div></div>
+          </div>
+          <div class="explore-more" id="exploreBtn" onclick="toggleAllRepos()">▾ Explore all 12 repositories</div>
+          <div class="all-repos" id="allRepos">
+            <div class="ar-search"><span style="color:var(--dim);">🔎</span><input placeholder="Filter repositories by name…" oninput="filterRepos(this.value)"/></div>
+            <div class="ar-row rr" data-name="Risk Compliance" onclick="openRepo()"><div class="ar-icon" style="background:#E0E7FF;color:#3730A3;">RC</div><div class="ar-body"><div class="ar-name">Risk &amp; Compliance</div><div class="ar-desc">Credit risk, exposure and regulatory features</div></div><div class="ar-domains"><b>5</b> domains</div></div>
+            <div class="ar-row rr" data-name="Payments Operations" onclick="openRepo()"><div class="ar-icon" style="background:#DCFCE7;color:#047857;">PO</div><div class="ar-body"><div class="ar-name">Payments Operations</div><div class="ar-desc">Settlement, clearing and payment rail features</div></div><div class="ar-domains"><b>3</b> domains</div></div>
+            <div class="ar-row rr" data-name="Wealth Management" onclick="openRepo()"><div class="ar-icon" style="background:#DBEAFE;color:#1E40AF;">WM</div><div class="ar-body"><div class="ar-name">Wealth Management</div><div class="ar-desc">Portfolio, advisory and investment behaviour features</div></div><div class="ar-domains"><b>4</b> domains</div></div>
+            <div class="ar-row rr" data-name="Digital Product" onclick="openRepo()"><div class="ar-icon" style="background:#CFFAFE;color:#0E7490;">DP</div><div class="ar-body"><div class="ar-name">Digital Product</div><div class="ar-desc">App usage, session and adoption features</div></div><div class="ar-domains"><b>3</b> domains</div></div>
+            <div class="ar-row rr" data-name="Lending" onclick="openRepo()"><div class="ar-icon" style="background:#FEF3C7;color:#92400E;">LN</div><div class="ar-body"><div class="ar-name">Lending</div><div class="ar-desc">Loan origination, underwriting and repayment features</div></div><div class="ar-domains"><b>5</b> domains</div></div>
+            <div class="ar-row rr" data-name="Insurance" onclick="openRepo()"><div class="ar-icon" style="background:#EDE9FE;color:#5B21B6;">IN</div><div class="ar-body"><div class="ar-name">Insurance</div><div class="ar-desc">Policy, claims and actuarial features</div></div><div class="ar-domains"><b>4</b> domains</div></div>
+          </div>
+          <div class="get-started">
+            <div class="gs-title">How to get started</div>
+            <div class="gs-sub">New to the Feature Store? Three steps to find and reuse features for your next model.</div>
+            <div class="gs-steps">
+              <div class="gs-step"><div class="gs-num">1</div><div><div class="gs-step-title">Open a repository</div><div class="gs-step-desc">A repository is a governed workspace. Pick one above to see the domains inside it.</div></div></div>
+              <div class="gs-step"><div class="gs-num">2</div><div><div class="gs-step-title">Find and understand features</div><div class="gs-step-desc">Browse or search a domain, open a feature to see its definition, lineage and freshness.</div></div></div>
+              <div class="gs-step"><div class="gs-num">3</div><div><div class="gs-step-title">Build a dataset</div><div class="gs-step-desc">Add features to a dataset, save a version, and hand off to training.</div></div></div>
+            </div>
+          </div>
+          <div style="height:20px;"></div>
+        </div>
+
+        <!-- ============ REPOSITORY PAGE ============ -->
+        <div class="view" id="v-repo">
+          <div class="breadcrumb"><a onclick="show('home')">Feature store</a><span class="sep">/</span><a onclick="show('home')">Repositories</a><span class="sep">/</span><b style="color:var(--navy);">Fraud Analytics</b></div>
+          <div class="repo-header"><div class="rh-icon" style="background:#FEE2E2;color:#991B1B;">FA</div><div><div class="rh-title">Fraud Analytics</div><div class="rh-sub">Governed feature store for fraud, risk scoring and card-testing detection</div></div></div>
+          <div class="repo-search-wrap">
+            <div class="big-search">
+              <span style="color:var(--dim);">🔎</span>
+              <input id="repoSearch" placeholder="Search features across all domains in Fraud Analytics… try 'spend' or 'risk'" oninput="repoSuggest(this.value)" onkeyup="if(event.key==='Enter'){runRepoSearch(this.value)}"/>
+              <span class="scope-tag">This repository · 4 domains</span>
+            </div>
+            <div class="search-hint">Searches features from <b>any domain</b> in this repository. Start typing for suggestions, or press <b>Enter</b> for full results.</div>
+            <div class="suggest" id="repoSuggestBox">
+              <div class="suggest-head">Suggestions</div>
+              <div id="suggestList"></div>
+              <div class="suggest-foot" id="suggestFoot" onclick="runRepoSearch(document.getElementById('repoSearch').value)">See all results →</div>
+            </div>
+          </div>
+          <div class="section-h" style="text-transform:uppercase;">Domains in this repository</div>
+          <div class="domains">
+            <div class="domain-card" onclick="openDomain()"><div class="dc-icon cust">C</div><div class="dc-name">Customer</div><div class="dc-desc">Customer behaviour, spend, tenure and transaction patterns.</div><div class="dc-foot"><b>2,418</b> features</div></div>
+            <div class="domain-card" onclick="openDomain()"><div class="dc-icon txn">T</div><div class="dc-name">Transactions</div><div class="dc-desc">Payment activity, counts, values and velocity aggregations.</div><div class="dc-foot"><b>1,872</b> features</div></div>
+            <div class="domain-card" onclick="openDomain()"><div class="dc-icon mer">M</div><div class="dc-name">Merchant</div><div class="dc-desc">Merchant risk, category, geography and performance signals.</div><div class="dc-foot"><b>612</b> features</div></div>
+            <div class="domain-card" onclick="openDomain()"><div class="dc-icon acct">A</div><div class="dc-name">Accounts</div><div class="dc-desc">Account state, balances, credit limits and repayment behaviour.</div><div class="dc-foot"><b>824</b> features</div></div>
+          </div>
+        </div>
+
+        <!-- ============ REPO SEARCH RESULTS ============ -->
+        <div class="view" id="v-search">
+          <div class="breadcrumb"><a onclick="show('home')">Feature store</a><span class="sep">/</span><a onclick="openRepo()">Fraud Analytics</a><span class="sep">/</span><b style="color:var(--navy);">Search: "<span id="stCrumb">spend</span>"</b></div>
+          <div class="repo-header" style="margin-bottom:20px;"><div class="rh-icon" style="background:#FEE2E2;color:#991B1B;">FA</div><div><div class="rh-title">Search results</div><div class="rh-sub">Across all 4 domains in Fraud Analytics</div></div></div>
+          <div class="repo-search-wrap" style="margin-top:0;">
+            <div class="big-search"><span style="color:var(--orange);">🔎</span><input id="repoSearch2" value="spend" oninput="filterResults(this.value)" onkeyup="if(event.key==='Enter'){filterResults(this.value)}"/><span class="scope-tag">This repository · 4 domains</span></div>
+          </div>
+          <div class="sr-summary"><b id="srCount">6</b> features match "<span id="stSummary">spend</span>" across <b id="srDomains">3</b> domains. Click any result to open it in its domain.</div>
+          <div id="searchResults">
+            <div class="sr-result srr" data-name="customer_avg_spend_30d" data-dom="Customer" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">customer_avg_spend_30d</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge cust">CUSTOMER</span></div><div class="sr-def">Average monetary spend by a customer over the last 30 days.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">customer_id</span></span><span><span class="dot green"></span><span class="val">Daily · 3h ago</span></span><span><span class="lbl">Used by</span><span class="val">28 models</span></span></div></div><div class="sr-go">Open in Customer →</div></div>
+            <div class="sr-result srr" data-name="customer_total_spend_90d" data-dom="Customer" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">customer_total_spend_90d</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge cust">CUSTOMER</span></div><div class="sr-def">Total monetary spend over the last 90 days.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">customer_id</span></span><span><span class="dot green"></span><span class="val">Daily · 3h ago</span></span><span><span class="lbl">Used by</span><span class="val">18 models</span></span></div></div><div class="sr-go">Open in Customer →</div></div>
+            <div class="sr-result srr" data-name="segment_avg_spend_30d" data-dom="Customer" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">segment_avg_spend_30d</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge cust">CUSTOMER</span></div><div class="sr-def">Average spend across a customer segment over 30 days.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">customer_segment_id</span></span><span><span class="dot green"></span><span class="val">Weekly · 2d ago</span></span><span><span class="lbl">Used by</span><span class="val">9 models</span></span></div></div><div class="sr-go">Open in Customer →</div></div>
+            <div class="sr-result srr" data-name="merchant_avg_spend_per_txn_30d" data-dom="Merchant" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">merchant_avg_spend_per_txn_30d</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge mer">MERCHANT</span></div><div class="sr-def">Average spend per transaction at a merchant over 30 days.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">merchant_id</span></span><span><span class="dot green"></span><span class="val">Daily · 5h ago</span></span><span><span class="lbl">Used by</span><span class="val">22 models</span></span></div></div><div class="sr-go">Open in Merchant →</div></div>
+            <div class="sr-result srr" data-name="txn_spend_velocity_1h" data-dom="Transactions" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">txn_spend_velocity_1h</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge txn">TRANSACTIONS</span></div><div class="sr-def">Rate of spend accumulation in the last hour. Spikes indicate fraud.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">txn_id</span></span><span><span class="dot green"></span><span class="val">Real-time · 2m ago</span></span><span><span class="lbl">Used by</span><span class="val">14 models</span></span></div></div><div class="sr-go">Open in Transactions →</div></div>
+            <div class="sr-result srr" data-name="account_avg_monthly_spend" data-dom="Accounts" onclick="openInDomain()"><div><div class="sr-title"><span class="sr-name">account_avg_monthly_spend</span><span class="sr-type">FLOAT</span><span class="sr-domain-badge acct">ACCOUNTS</span></div><div class="sr-def">Average monthly spend drawn from an account.</div><div class="sr-meta"><span><span class="lbl">Entity</span><span class="val">account_id</span></span><span><span class="dot yellow"></span><span class="val">Weekly · 6d ago</span></span><span><span class="lbl">Used by</span><span class="val">7 models</span></span></div></div><div class="sr-go">Open in Accounts →</div></div>
+          </div>
+        </div>
+
+        <!-- ============ DOMAIN PAGE ============ -->
+        <div class="view" id="v-domain" style="padding-bottom:80px;">
+          <div class="breadcrumb"><a onclick="show('home')">Feature store</a><span class="sep">/</span><a onclick="openRepo()">Fraud Analytics</a><span class="sep">/</span><a onclick="openRepo()">Domains</a><span class="sep">/</span><b style="color:var(--navy);">Customer</b></div>
+          <div class="repo-header" style="margin-bottom:18px;"><div class="rh-icon" style="background:#DBEAFE;color:#1E40AF;">C</div><div><div class="rh-title">Customer</div><div class="rh-sub">Fraud Analytics · Owned by Customer Data Management</div></div></div>
+          <div class="domain-tabs">
+            <div class="domain-tab active" id="tab-feat" onclick="domTab('feat')">Features <span class="tcount">2,418</span></div>
+            <div class="domain-tab" id="tab-data" onclick="domTab('data')">Datasets <span class="tcount">87</span></div>
+          </div>
+
+          <!-- FEATURES TAB -->
+          <div class="domain-tabcontent active" id="dc-feat">
+            <div class="search-row">
+              <div class="search-box" id="domSearchBox"><span style="color:var(--dim);" id="domSearchIcon">🔎</span><input id="domSearch" placeholder="Search features in Customer… try 'spend', 'velocity', 'segment'" oninput="domFilter(this.value)"/><span class="clear-x" id="domClear" style="display:none;" onclick="domClearFilter()">✕</span><span class="filter-badge" id="domBadge" style="display:none;">FILTERING</span></div>
+            </div>
+            <!-- FULL FILTER SET -->
+            <div class="facet-row">
+              <div style="position:relative;"><span class="facet-chip on" onclick="togglePop('pop-entity',event)">Entity: all <span class="caret">▾</span></span>
+                <div class="facet-pop" id="pop-entity"><div class="fp-opt on"><span class="fp-check">✓</span>customer_id<span class="fp-count">1,890</span></div><div class="fp-opt"><span class="fp-check"></span>customer_segment_id<span class="fp-count">328</span></div><div class="fp-opt"><span class="fp-check"></span>household_id<span class="fp-count">200</span></div></div>
+              </div>
+              <div style="position:relative;"><span class="facet-chip" onclick="togglePop('pop-fresh',event)">Freshness: any <span class="caret">▾</span></span>
+                <div class="facet-pop" id="pop-fresh"><div class="fp-opt"><span class="fp-check"></span>Real-time<span class="fp-count">312</span></div><div class="fp-opt"><span class="fp-check"></span>Hourly<span class="fp-count">204</span></div><div class="fp-opt"><span class="fp-check"></span>Daily<span class="fp-count">1,190</span></div><div class="fp-opt"><span class="fp-check"></span>Weekly<span class="fp-count">184</span></div></div>
+              </div>
+              <div style="position:relative;"><span class="facet-chip" onclick="togglePop('pop-type',event)">Data type: any <span class="caret">▾</span></span>
+                <div class="facet-pop" id="pop-type"><div class="fp-opt"><span class="fp-check"></span>FLOAT<span class="fp-count">1,102</span></div><div class="fp-opt"><span class="fp-check"></span>INTEGER<span class="fp-count">688</span></div><div class="fp-opt"><span class="fp-check"></span>VARCHAR<span class="fp-count">72</span></div></div>
+              </div>
+              <div style="position:relative;"><span class="facet-chip more" onclick="togglePop('pop-more',event)">+ More filters</span>
+                <div class="more-pop" id="pop-more">
+                  <div class="more-grid">
+                    <div><div class="mg-label">Tags</div><div class="mg-opt"><span class="fp-check"></span>fraud<span class="fp-count">118</span></div><div class="mg-opt"><span class="fp-check"></span>real-time<span class="fp-count">312</span></div><div class="mg-opt"><span class="fp-check"></span>monetary<span class="fp-count">288</span></div><div class="mg-opt"><span class="fp-check"></span>churn-model<span class="fp-count">156</span></div></div>
+                    <div><div class="mg-label">Owner</div><div class="mg-opt"><span class="fp-check"></span>Meera Rao<span class="fp-count">784</span></div><div class="mg-opt"><span class="fp-check"></span>Priya Menon<span class="fp-count">1,208</span></div><div class="mg-opt"><span class="fp-check"></span>Ravi Krishnan<span class="fp-count">426</span></div></div>
+                    <div><div class="mg-label">Popularity</div><div class="mg-opt"><span class="fp-check"></span>Used by 50+ models<span class="fp-count">184</span></div><div class="mg-opt"><span class="fp-check"></span>Used by 10+ models<span class="fp-count">612</span></div><div class="mg-opt"><span class="fp-check"></span>Unused<span class="fp-count">96</span></div></div>
+                    <div><div class="mg-label">Policy</div><div class="mg-opt"><span class="fp-check"></span>PII-safe<span class="fp-count">2,102</span></div><div class="mg-opt"><span class="fp-check"></span>Restricted<span class="fp-count">284</span></div></div>
+                    <div><div class="mg-label">Time travel <span class="mg-badge">ADV</span></div><input class="tt-input" placeholder="As of · 2026-01-15"/></div>
+                    <div><div class="mg-label">Added</div><div class="mg-opt"><span class="fp-check"></span>Last 7 days<span class="fp-count">42</span></div><div class="mg-opt"><span class="fp-check"></span>Last 30 days<span class="fp-count">168</span></div></div>
+                  </div>
+                  <div class="more-foot"><button class="mf-clear" onclick="togglePop('pop-more',event)">Clear</button><button class="mf-apply" onclick="togglePop('pop-more',event)">Apply</button></div>
+                </div>
+              </div>
+              <div class="result-count" id="domResCount"><b>2,418</b> features · <b>3</b> entities</div>
+            </div>
+
+            <div id="domFeatureList">
+              <!-- ENTITY 1: customer_id -->
+              <div class="entity-block eblock" data-entity="customer_id">
+                <div class="entity-header" onclick="toggleEntity(this)"><span class="chevron">▾</span><div class="ent-icon">E</div><span class="ent-name">customer_id</span><span class="ent-count">1,890 features</span><span class="ent-meta">Primary customer identifier</span></div>
+                <div class="entity-body">
+                  <div class="feature-row df" data-name="customer_avg_spend_30d" id="targetFeature" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">customer_avg_spend_30d</span><span class="fr-type">FLOAT</span></div><div class="fr-def">Average monetary spend by a customer over the last 30 days.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">4 · current</span></span><span><span class="dot green"></span><span class="val">Daily · 3h ago</span></span><span><span class="lbl">Used by</span><span class="val">28 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn added">✓ In dataset</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="customer_txn_velocity_1h" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">customer_txn_velocity_1h</span><span class="fr-type">INTEGER</span></div><div class="fr-def">Number of transaction attempts by a customer in the last 60 minutes.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">3</span></span><span><span class="dot green"></span><span class="val">Real-time · 4m ago</span></span><span><span class="lbl">Used by</span><span class="val">36 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn added">✓ In dataset</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="customer_declined_txn_count_24h" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">customer_declined_txn_count_24h</span><span class="fr-type">INTEGER</span></div><div class="fr-def">Count of declined transactions in the last 24 hours.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">1</span></span><span><span class="dot green"></span><span class="val">Hourly · 22m ago</span></span><span><span class="lbl">Used by</span><span class="val">19 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="customer_tenure_months">
+                    <div><div class="fr-title"><span class="fr-name">customer_tenure_months</span><span class="fr-type">INTEGER</span></div><div class="fr-def">Number of months since the customer joined.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">1</span></span><span><span class="dot green"></span><span class="val">Daily · 3h ago</span></span><span><span class="lbl">Used by</span><span class="val">54 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="show-more-row"><a>Show all 1,890 features for customer_id →</a></div>
+                </div>
+              </div>
+              <!-- ENTITY 2: customer_segment_id -->
+              <div class="entity-block eblock" data-entity="customer_segment_id">
+                <div class="entity-header" onclick="toggleEntity(this)"><span class="chevron">▾</span><div class="ent-icon">E</div><span class="ent-name">customer_segment_id</span><span class="ent-count">328 features</span><span class="ent-meta">Segment-level aggregation of customers</span></div>
+                <div class="entity-body">
+                  <div class="feature-row df" data-name="segment_avg_spend_30d" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">segment_avg_spend_30d</span><span class="fr-type">FLOAT</span></div><div class="fr-def">Average spend across a customer segment over 30 days.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">2</span></span><span><span class="dot green"></span><span class="val">Weekly · 2d ago</span></span><span><span class="lbl">Used by</span><span class="val">9 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="segment_churn_rate_90d" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">segment_churn_rate_90d</span><span class="fr-type">FLOAT</span></div><div class="fr-def">Churn rate of the segment over the trailing 90 days.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">3</span></span><span><span class="dot yellow"></span><span class="val">Weekly · 4d ago</span></span><span><span class="lbl">Used by</span><span class="val">12 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="segment_fraud_incidence_30d" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">segment_fraud_incidence_30d</span><span class="fr-type">FLOAT</span></div><div class="fr-def">Rate of confirmed fraud within the segment over 30 days.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">1</span></span><span><span class="dot green"></span><span class="val">Daily · 5h ago</span></span><span><span class="lbl">Used by</span><span class="val">6 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="show-more-row"><a>Show all 328 features for customer_segment_id →</a></div>
+                </div>
+              </div>
+              <!-- ENTITY 3: household_id -->
+              <div class="entity-block eblock" data-entity="household_id">
+                <div class="entity-header" onclick="toggleEntity(this)"><span class="chevron">▾</span><div class="ent-icon">E</div><span class="ent-name">household_id</span><span class="ent-count">200 features</span><span class="ent-meta">Household-level rollup of accounts</span></div>
+                <div class="entity-body">
+                  <div class="feature-row df" data-name="household_total_spend_90d" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">household_total_spend_90d</span><span class="fr-type">FLOAT</span></div><div class="fr-def">Total spend aggregated across all customers in a household over 90 days.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">2</span></span><span><span class="dot green"></span><span class="val">Weekly · 3d ago</span></span><span><span class="lbl">Used by</span><span class="val">5 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="feature-row df" data-name="household_member_count" onclick="openFeature()">
+                    <div><div class="fr-title"><span class="fr-name">household_member_count</span><span class="fr-type">INTEGER</span></div><div class="fr-def">Number of customer accounts belonging to the household.</div><div class="fr-meta"><span><span class="lbl">v</span><span class="val">1</span></span><span><span class="dot green"></span><span class="val">Daily · 6h ago</span></span><span><span class="lbl">Used by</span><span class="val">8 models</span></span></div></div>
+                    <div class="fr-actions"><button class="fr-btn primary" onclick="event.stopPropagation();this.textContent='✓ Added';this.className='fr-btn added';">+ Add</button></div>
+                  </div>
+                  <div class="show-more-row"><a>Show all 200 features for household_id →</a></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="zero-inline" id="domZero">
+              <div class="zi-icon">🔍</div>
+              <div class="zi-title">No features match "<span id="domZeroTerm"></span>" in Customer</div>
+              <div class="zi-msg">Try a different term, clear the filter, or ask Atlas to look across all domains.</div>
+            </div>
+          </div>
+
+          <!-- DATASETS TAB -->
+          <div class="domain-tabcontent" id="dc-data">
+            <div class="ds-list-intro">Datasets other teams have built in this domain. Open one to <b>pick the features you want</b> and add them to your working dataset.</div>
+            <div class="ds-card" onclick="openDatasetPreview()"><div class="ds-card-icon">D</div><div class="ds-card-body"><div class="ds-card-name">fraud_scoring_baseline</div><div class="ds-card-desc">Reference fraud feature set from the Fraud &amp; Risk team. Blends spend, velocity and decline signals.</div></div><div class="ds-card-right"><div class="ds-trust">✓ 14 production models</div><div class="ds-card-meta">12 features · Ravi Krishnan</div></div></div>
+            <div class="ds-card" onclick="openDatasetPreview()"><div class="ds-card-icon">D</div><div class="ds-card-body"><div class="ds-card-name">card_testing_training_set</div><div class="ds-card-desc">Focused set for card-testing detection. Real-time velocity and decline features.</div></div><div class="ds-card-right"><div class="ds-trust">✓ 6 production models</div><div class="ds-card-meta">6 features · Meera Rao</div></div></div>
+            <div class="ds-card" onclick="openDatasetPreview()"><div class="ds-card-icon">D</div><div class="ds-card-body"><div class="ds-card-name">churn_training_baseline</div><div class="ds-card-desc">Customer churn baseline. Engagement, spend and tenure signals.</div></div><div class="ds-card-right"><div class="ds-trust">✓ 9 production models</div><div class="ds-card-meta">18 features · Meera Rao</div></div></div>
+          </div>
+
+          <div class="tera-fab"><button class="tera-fab-btn" onclick="openTera()"><span class="tera-fab-pulse"></span>✦</button><div class="tera-fab-label">Ask Atlas about Customer</div></div>
+        </div>
+
+        <!-- ============ DATASET BUILDER ============ -->
+        <div class="view" id="v-builder" style="max-width:1000px;">
+          <div class="breadcrumb"><a onclick="show('home')">Feature store</a><span class="sep">/</span><a onclick="openRepo()">Fraud Analytics</a><span class="sep">/</span><a>My work</a><span class="sep">/</span><b style="color:var(--navy);">fraud_scoring_v3</b></div>
+          <div class="db-title-row"><input class="db-title-input" value="fraud_scoring_v3"/><span class="db-version-chip">v3 · working copy</span><span class="db-unsaved">UNSAVED CHANGES</span></div>
+          <div class="db-subtitle">4 features · scope: customer_id · Fraud Analytics · owned by Arjun Iyer · last saved yesterday</div>
+          <div class="type-toggle"><div class="tt-option active">Regular dataset</div><div class="tt-option">Time series dataset</div></div>
+          <div style="height:16px;"></div>
+          <div class="def-callout"><span class="di">🗂</span><div>A dataset version stores a <b>definition</b>, not a copy of the data: the features used, their pinned versions, the join key and any filters. The rows are <b>rebuilt on demand</b> from the feature store, so no duplicate tables are created.</div></div>
+          <div class="db-block">
+            <div class="db-block-lbl">Features in this dataset <span class="db-block-hint">the cart · click a pill to change its version</span></div>
+            <div class="feature-cart">
+              <div class="cart-pill"><span class="cp-name">customer_avg_spend_30d</span><span class="cp-type">FLOAT</span><span class="cp-ent">customer_id</span><span class="cp-ver">v4</span><span class="cp-x">✕</span></div>
+              <div class="cart-pill"><span class="cp-name">customer_txn_velocity_1h</span><span class="cp-type">INT</span><span class="cp-ent">customer_id</span><span class="cp-ver">v3</span><span class="cp-x">✕</span></div>
+              <div class="cart-pill"><span class="cp-name">customer_avg_txn_amount_30d</span><span class="cp-type">FLOAT</span><span class="cp-ent">customer_id</span><span class="cp-ver">v2</span><span class="cp-x">✕</span></div>
+              <div class="cart-pill"><span class="cp-name">customer_declined_txn_count_24h</span><span class="cp-type">INT</span><span class="cp-ent">customer_id</span><span class="cp-ver">v1</span><span class="cp-x">✕</span></div>
+              <div class="cart-pill add-more" onclick="openDomain()">+ Add more features</div>
+            </div>
+          </div>
+          <div class="db-block">
+            <div class="db-block-lbl">Join key <span class="db-block-hint">detected from your features</span></div>
+            <div class="join-card"><div><div class="jk-keys">JOIN ON customer_id</div><div class="jk-note">All 4 features share the customer_id entity. One row per customer. No cross-entity join needed.</div></div><span class="jk-override">Override →</span></div>
+          </div>
+          <div class="db-block">
+            <div class="db-block-lbl">Preview data <span class="db-block-hint">choose options, then generate</span></div>
+            <div class="preview-options">
+              <div class="po-field"><span class="po-label">Point in time</span><input class="po-input" value="2026-07-24"/></div>
+              <div class="po-field"><span class="po-label">Row sample</span><select class="po-select"><option>First 100 rows</option><option>Random 100 rows</option></select></div>
+              <div class="po-field"><span class="po-label">Null handling</span><select class="po-select"><option>Show nulls</option><option>Drop null rows</option></select></div>
+              <button class="gen-preview-btn" onclick="genPreview()">▷ Generate preview</button>
+            </div>
+            <div class="preview-result" id="previewResult">
+              <table class="prev-table"><thead><tr><th>customer_id</th><th>avg_spend_30d</th><th>velocity_1h</th><th>avg_txn_30d</th><th>declined_24h</th></tr></thead>
+              <tbody><tr><td>C10245</td><td>428.19</td><td>1</td><td>48.20</td><td>0</td></tr><tr><td>C10318</td><td>1208.44</td><td>2</td><td>112.30</td><td>0</td></tr><tr class="fraud-row"><td>C10387</td><td>85.20</td><td>7</td><td>18.40</td><td>5</td></tr><tr><td>C10402</td><td>612.03</td><td>1</td><td>68.10</td><td>0</td></tr><tr><td>C10488</td><td>950.12</td><td>3</td><td>102.80</td><td>1</td></tr></tbody></table>
+              <div class="prev-footer">Row C10387 is a textbook fraud pattern: 7 transactions in an hour, 5 declines in 24h, tiny average transaction size. · Estimated rows: <b>82M</b> · Rebuilt live in <b>28 seconds</b></div>
+            </div>
+          </div>
+          <div class="db-block">
+            <div class="db-block-lbl">Save and hand off</div>
+            <div class="checkout-actions"><button class="co-btn primary" onclick="show('saved')">💾 Save as new version (v4)</button><button class="co-btn">⬇ Export code to notebook</button></div>
+            <div class="co-note">Save stores the definition (features, versions, join key, filters) as version 4. Cosmetic edits like name do not create a new version.</div>
+          </div>
+          <div class="collapsible open">
+            <div class="col-header" onclick="this.parentElement.classList.toggle('open')"><span class="col-chevron">▶</span><span class="col-title">Versions</span><span class="col-hint">3 previous definitions · rebuilt on demand</span></div>
+            <div class="col-body">
+              <div class="ver-item"><span class="vi-badge current">v3 · current</span><div class="vi-summary">Added customer_avg_txn_amount_30d and customer_declined_txn_count_24h<div class="vi-recipe">recipe: 4 features · join customer_id · as-of latest</div></div><span class="vi-meta">yesterday · Arjun Iyer</span><span class="vi-actions"><a>View recipe</a><a>Rebuild</a></span></div>
+              <div class="ver-item"><span class="vi-badge">v2</span><div class="vi-summary">Added customer_txn_velocity_1h<div class="vi-recipe">recipe: 2 features · join customer_id</div></div><span class="vi-meta">Jul 20 · Arjun Iyer</span><span class="vi-actions"><a>View recipe</a><a>Rebuild</a><a>Compare</a></span></div>
+              <div class="ver-item"><span class="vi-badge">v1</span><div class="vi-summary">Initial version · 1 feature<div class="vi-recipe">recipe: 1 feature · join customer_id</div></div><span class="vi-meta">Jul 15 · Arjun Iyer</span><span class="vi-actions"><a>View recipe</a><a>Rebuild</a><a>Compare</a></span></div>
+            </div>
+          </div>
+          <div style="height:40px;"></div>
+        </div>
+
+        <!-- ============ SAVE CONFIRMATION ============ -->
+        <div class="view" id="v-saved">
+          <div class="save-confirm">
+            <div class="sc-hero"><div class="sc-check">✓</div><div class="sc-title">Dataset saved</div><div class="sc-sub">fraud_scoring_v3 is now at version 4. The definition is stored and ready to rebuild any time.</div></div>
+            <div class="sc-card">
+              <div class="sc-card-head"><div class="sc-card-icon">D</div><div><div class="sc-card-name">fraud_scoring_v3</div><div class="sc-card-sub">Fraud Analytics · Customer domain · owned by Arjun Iyer</div></div><div class="sc-newver">v4 · saved</div></div>
+              <div class="sc-rows">
+                <div class="sc-row"><div class="sc-k">Features</div><div class="sc-v"><div class="sc-featpills"><span class="sc-fp">customer_avg_spend_30d · v4</span><span class="sc-fp">customer_txn_velocity_1h · v3</span><span class="sc-fp">customer_avg_txn_amount_30d · v2</span><span class="sc-fp">customer_declined_txn_count_24h · v1</span></div></div></div>
+                <div class="sc-row"><div class="sc-k">Join key</div><div class="sc-v"><span class="mono">customer_id</span> · one row per customer</div></div>
+                <div class="sc-row"><div class="sc-k">Point in time</div><div class="sc-v"><span class="mono">2026-07-24</span> · resolved with VALIDTIME</div></div>
+                <div class="sc-row"><div class="sc-k">Dataset type</div><div class="sc-v">Regular</div></div>
+                <div class="sc-row"><div class="sc-k">Estimated rows</div><div class="sc-v"><span class="mono">82,412,038</span> · rebuilt on demand in ~28s</div></div>
+                <div class="sc-row"><div class="sc-k">Changed from v3</div><div class="sc-v">Added <span class="mono">customer_avg_txn_amount_30d</span> and <span class="mono">customer_declined_txn_count_24h</span></div></div>
+                <div class="sc-row"><div class="sc-k">Saved by</div><div class="sc-v">Arjun Iyer · just now</div></div>
+              </div>
+            </div>
+            <div class="sc-recipe-note"><span style="font-size:15px;">🗂</span><div>This version stored a <b>definition, not a data copy</b>. The 82M rows are regenerated from the feature store whenever v4 is rebuilt, so there is no duplicate table in storage.</div></div>
+            <div class="sc-actions"><button class="sc-btn" onclick="show('builder')">← Back to dataset</button><button class="sc-btn">⬇ Export code to notebook</button><button class="sc-btn primary">🚀 Continue to training</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- bottom strip -->
+      <div class="dataset-strip" id="datasetStrip" style="display:none;">
+        <span class="ds-cart-icon">🛒</span>
+        <div class="ds-info"><div class="ds-name-t">fraud_scoring_v3</div><div class="ds-count">2 features · working copy</div><div class="ds-scope">scope: customer_id</div></div>
+        <div class="ds-pills-mini"><span class="ds-pill-mini">customer_avg_spend_30d <span class="x">✕</span></span><span class="ds-pill-mini">customer_txn_velocity_1h <span class="x">✕</span></span></div>
+        <button class="ds-build-btn" onclick="show('builder')">Build dataset →</button>
+      </div>
+
+      <!-- feature detail -->
+      <div class="overlay" id="featureOverlay" onclick="closeFeature()"></div>
+      <div class="slideover" id="featurePanel">
+        <div class="so-header">
+          <div class="so-crumb">Fraud Analytics <span class="sep">/</span> Customer <span class="sep">/</span> Entity: <b>customer_id</b> <span class="sep">/</span> Owner: Meera Rao</div>
+          <div class="so-top"><span class="so-name">customer_declined_txn_count_24h</span><span class="so-type">INTEGER</span><select class="version-select"><option>v1 · current</option></select><span class="so-close" onclick="closeFeature()">✕</span></div>
+          <div class="so-actions"><button class="so-action primary">＋ Add to dataset</button><button class="so-action">☆ Bookmark</button><button class="so-action">🔗 Share</button></div>
+          <div class="so-tabs"><div class="so-tab active" onclick="detailTab(event,'ov')">Overview</div><div class="so-tab" onclick="detailTab(event,'stat')">Statistics</div><div class="so-tab" onclick="detailTab(event,'lin')">Lineage</div><div class="so-tab" onclick="detailTab(event,'use')">Usage</div></div>
+        </div>
+        <div class="so-body">
+          <div class="so-tabcontent active" id="dt-ov">
+            <div class="trust-3"><div class="trust-tile"><div class="tl-lbl">Freshness</div><div class="tl-val"><span class="dot green"></span> Hourly · 22m ago</div></div><div class="trust-tile"><div class="tl-lbl">Consumers</div><div class="tl-val">19 models</div></div><div class="trust-tile"><div class="tl-lbl">Policy</div><div class="tl-val" style="font-size:12.5px;">PII-safe</div></div></div>
+            <div class="blk"><div class="blk-lbl">Business definition</div><div class="blk-body">The number of declined transaction attempts for a customer in the previous 24 hours, across all channels and merchants. A run of declines followed by a successful transaction is a textbook card-testing pattern.</div></div>
+            <div class="blk"><div class="blk-lbl">Formula</div><div class="code">SELECT customer_id,
+       COUNT(*) AS customer_declined_txn_count_24h
+FROM   TXN_STREAM
+WHERE  txn_status = 'DECLINED'
+  AND  txn_ts BETWEEN CURRENT_TIMESTAMP - INTERVAL '24' HOUR
+                 AND CURRENT_TIMESTAMP
+GROUP  BY customer_id;</div></div>
+            <div class="blk"><div class="blk-lbl">Produced by</div><div class="produced-by"><div class="pb-name">customer_decline_monitoring_process</div><div class="pb-id">process_id: f19b2c84-9c02-11f0-b8d4</div><div class="pb-meta">Owned by Meera Rao · Runs hourly at :05</div></div></div>
+            <div class="blk"><div class="blk-lbl">Refresh history · Last 5 runs</div><div class="refresh-table">
+              <div class="refresh-row-t"><span class="rr-time">14:05:00</span><span class="rr-status ok">SUCCESS</span><span class="rr-dur">38s</span><span class="rr-lag">Target 1h · Actual 59m</span></div>
+              <div class="refresh-row-t"><span class="rr-time">13:05:00</span><span class="rr-status ok">SUCCESS</span><span class="rr-dur">41s</span><span class="rr-lag">Target 1h · Actual 1h 01m</span></div>
+              <div class="refresh-row-t"><span class="rr-time">12:05:00</span><span class="rr-status ok">SUCCESS</span><span class="rr-dur">36s</span><span class="rr-lag">Target 1h · Actual 58m</span></div>
+              <div class="refresh-row-t"><span class="rr-time">11:05:00</span><span class="rr-status ok">SUCCESS</span><span class="rr-dur">39s</span><span class="rr-lag">Target 1h · Actual 1h 00m</span></div>
+              <div class="refresh-row-t"><span class="rr-time">10:05:00</span><span class="rr-status ok">SUCCESS</span><span class="rr-dur">37s</span><span class="rr-lag">Target 1h · Actual 59m</span></div>
+            </div></div>
+            <div class="blk"><div class="blk-lbl">Tags</div><div class="tag-row"><span class="tag-pill">fraud</span><span class="tag-pill">real-time</span><span class="tag-pill">declines</span><span class="tag-pill">card-testing</span></div></div>
+          </div>
+          <div class="so-tabcontent" id="dt-stat">
+            <div class="stats-4"><div class="stat-tile"><div class="stat-val">0.4</div><div class="stat-lbl">Mean</div></div><div class="stat-tile"><div class="stat-val">3</div><div class="stat-lbl">P95</div></div><div class="stat-tile"><div class="stat-val">0.1%</div><div class="stat-lbl">Nulls</div></div><div class="stat-tile"><div class="stat-val">2.0M</div><div class="stat-lbl">Distinct</div></div></div>
+            <div class="blk"><div class="blk-lbl">Value distribution</div><div class="histogram-box"><svg viewBox="0 0 600 200" style="width:100%;height:200px;"><line x1="40" y1="165" x2="580" y2="165" stroke="#E5E7EB"/><line x1="40" y1="20" x2="40" y2="165" stroke="#E5E7EB"/><rect x="60" y="35" width="60" height="130" fill="#4F6BF4"/><rect x="130" y="90" width="60" height="75" fill="#4F6BF4" opacity=".85"/><rect x="200" y="120" width="60" height="45" fill="#4F6BF4" opacity=".75"/><rect x="270" y="138" width="60" height="27" fill="#4F6BF4" opacity=".65"/><rect x="340" y="150" width="60" height="15" fill="#4F6BF4" opacity=".55"/><text x="90" y="182" text-anchor="middle" font-size="10" fill="#6B7280">0</text><text x="160" y="182" text-anchor="middle" font-size="10" fill="#6B7280">1</text><text x="230" y="182" text-anchor="middle" font-size="10" fill="#6B7280">2</text><text x="300" y="14" text-anchor="middle" font-size="10" font-weight="700" fill="#131C35">Most customers have 0 declines. A long tail carries fraud risk.</text></svg></div></div>
+          </div>
+          <div class="so-tabcontent" id="dt-lin">
+            <div class="lineage-legend"><span class="lg src"><span class="lg-box"></span>Source</span><span class="lg tr"><span class="lg-box"></span>Transformation</span><span class="lg ft"><span class="lg-box"></span>Feature</span></div>
+            <div class="lineage-box"><svg viewBox="0 0 680 240" style="width:100%;height:240px;"><rect x="10" y="90" width="140" height="52" rx="7" fill="#E6ECF6" stroke="#131C35" stroke-width="1.3"/><text x="80" y="112" text-anchor="middle" font-size="11" font-weight="700" fill="#131C35">TXN_STREAM</text><text x="80" y="128" text-anchor="middle" font-size="9" fill="#6B7280" font-family="monospace">Vantage · streaming</text><rect x="230" y="40" width="150" height="48" rx="7" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.3"/><text x="305" y="61" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">Filter declined</text><text x="305" y="77" text-anchor="middle" font-size="9" fill="#78350F" font-family="monospace">status = 'DECLINED'</text><rect x="230" y="145" width="150" height="48" rx="7" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.3"/><text x="305" y="166" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">24h window</text><rect x="440" y="92" width="130" height="48" rx="7" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.3"/><text x="505" y="113" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">COUNT + GROUP</text><rect x="600" y="94" width="72" height="44" rx="7" fill="#EEF1FE" stroke="#4F6BF4" stroke-width="1.6"/><text x="636" y="112" text-anchor="middle" font-size="9" font-weight="700" fill="#4F6BF4">declined</text><text x="636" y="124" text-anchor="middle" font-size="9" font-weight="700" fill="#4F6BF4">count_24h</text><path d="M150,110 C195,110 195,64 230,64" stroke="#131C35" stroke-width="1.4" fill="none" opacity=".5"/><path d="M150,120 C195,120 195,169 230,169" stroke="#131C35" stroke-width="1.4" fill="none" opacity=".5"/><path d="M380,64 C415,64 415,110 440,110" stroke="#131C35" stroke-width="1.4" fill="none" opacity=".5"/><path d="M380,169 C415,169 415,120 440,120" stroke="#131C35" stroke-width="1.4" fill="none" opacity=".5"/><path d="M570,116 C585,116 585,116 600,116" stroke="#4F6BF4" stroke-width="1.8" fill="none"/></svg></div>
+          </div>
+          <div class="so-tabcontent" id="dt-use">
+            <div class="usage-strip3"><div class="usage-card"><div class="usage-num">1,204</div><div class="usage-lbl">Retrievals / 30d</div></div><div class="usage-card"><div class="usage-num">19</div><div class="usage-lbl">Active models</div></div><div class="usage-card"><div class="usage-num">8</div><div class="usage-lbl">Datasets</div></div></div>
+            <div class="blk"><div class="blk-lbl">Models using this feature · 19 <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim);">— primary trust signal</span></div><div class="item-row"><div class="ir-icon model">M</div><div class="ir-body"><div class="ir-name">fraud_scorer_v4</div><div class="ir-meta">Fraud &amp; Risk · Production · Ravi Krishnan</div></div><span class="ir-open">Open →</span></div><div class="item-row"><div class="ir-icon model">M</div><div class="ir-body"><div class="ir-name">card_testing_detector_v2</div><div class="ir-meta">Fraud &amp; Risk · Production · Meera Rao</div></div><span class="ir-open">Open →</span></div><div class="see-all"><a>See all 19 models →</a></div></div>
+            <div class="blk"><div class="blk-lbl">Included in datasets · 8 <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim);">— reuse signal</span></div><div class="item-row"><div class="ir-icon dataset">D</div><div class="ir-body"><div class="ir-name">fraud_scoring_baseline</div><div class="ir-meta">v5 · 12 features</div></div><span class="ir-open">Open →</span></div><div class="see-all"><a>See all 8 datasets →</a></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- dataset preview cherry-pick -->
+      <div class="overlay" id="datasetOverlay" onclick="closeDatasetPreview()"></div>
+      <div class="slideover" id="datasetPanel">
+        <div class="dp-header"><div class="dp-name">fraud_scoring_baseline</div><div class="dp-desc">Reference fraud feature set from the Fraud &amp; Risk team. Pick the features you want to add to your working dataset.</div><div class="dp-trust-row"><span class="dp-trust">✓ 14 production models</span><span class="dp-meta">12 features</span><span class="dp-meta">Owner: Ravi Krishnan</span></div><span class="so-close" style="position:absolute;top:20px;right:20px;" onclick="closeDatasetPreview()">✕</span></div>
+        <div class="dp-selectbar"><span class="dp-selall" onclick="selectAll()"><span class="dp-check" id="selAllCheck"></span> Select all available</span><span class="dp-selcount" id="selCount">0 selected</span></div>
+        <div class="dp-body">
+          <div class="dp-feat disabled"><span class="dp-check">✓</span><div class="dp-fbody"><div class="dp-fname">customer_avg_spend_30d <span class="dp-ftype">FLOAT</span></div><div class="dp-fdef">Average monetary spend over 30 days.</div></div><span class="dp-fnote">Already in your dataset</span></div>
+          <div class="dp-feat disabled"><span class="dp-check">✓</span><div class="dp-fbody"><div class="dp-fname">customer_txn_velocity_1h <span class="dp-ftype">INT</span></div><div class="dp-fdef">Transaction attempts in the last hour.</div></div><span class="dp-fnote">Already in your dataset</span></div>
+          <div class="dp-feat" onclick="toggleFeat(this)"><span class="dp-check"></span><div class="dp-fbody"><div class="dp-fname">customer_high_risk_txn_ratio_30d <span class="dp-ftype">FLOAT</span></div><div class="dp-fdef">Ratio of high-risk-flagged transactions over 30 days.</div></div></div>
+          <div class="dp-feat" onclick="toggleFeat(this)"><span class="dp-check"></span><div class="dp-fbody"><div class="dp-fname">customer_cross_border_txn_count_30d <span class="dp-ftype">INT</span></div><div class="dp-fdef">Cross-border transactions in 30 days.</div></div></div>
+          <div class="dp-feat" onclick="toggleFeat(this)"><span class="dp-check"></span><div class="dp-fbody"><div class="dp-fname">customer_new_payee_count_7d <span class="dp-ftype">INT</span></div><div class="dp-fdef">New payees added in the last 7 days.</div></div></div>
+          <div class="dp-feat" onclick="toggleFeat(this)"><span class="dp-check"></span><div class="dp-fbody"><div class="dp-fname">customer_night_txn_ratio_30d <span class="dp-ftype">FLOAT</span></div><div class="dp-fdef">Share of transactions occurring at night.</div></div></div>
+        </div>
+        <div class="dp-foot"><button class="dp-add-btn" id="dpAddBtn" disabled onclick="addPicked()">Select features to add</button></div>
+      </div>
+
+      <!-- tera -->
+      <div class="overlay" id="teraOverlay" onclick="closeTera()"></div>
+      <div class="slideover" id="teraPanel">
+        <div class="tera-header"><div class="th-icon">✦</div><div><div class="th-title">Atlas</div><div class="th-sub">AI assistant for Feature Store</div></div><div class="th-close" onclick="closeTera()">✕</div></div>
+        <div class="context-strip"><span>💡 Context:</span><b>Fraud Analytics</b><span>·</span><b>Customer</b></div>
+        <div class="tera-body">
+          <div class="tera-msg user">Which customer features are best for detecting card-testing fraud?</div>
+          <div class="tera-step"><div class="spinner"></div><span>Understanding query → Searching Customer domain → Ranking</span></div>
+          <div class="tera-msg bot">
+            <div style="margin-bottom:10px;">Card-testing shows up as rapid transaction bursts and spikes in declines. In <b>Customer</b> I found <b>4 features</b> that capture these signals well.</div>
+            <div class="tera-fcard"><div class="tf-title"><span class="tf-name">customer_txn_velocity_1h</span><span class="tf-type">INTEGER</span><span class="tf-match">96% match</span></div><div class="tf-def">Transaction attempts in the last hour. The strongest card-testing signal.</div><div class="tf-actions"><button class="tf-btn" onclick="closeTera();openFeature()">Open in Store</button><button class="tf-btn primary">+ Add</button></div></div>
+            <div class="tera-fcard"><div class="tf-title"><span class="tf-name">customer_declined_txn_count_24h</span><span class="tf-type">INTEGER</span><span class="tf-match">93% match</span></div><div class="tf-def">Declines in the last 24 hours. Multiple declines then a success is textbook.</div><div class="tf-actions"><button class="tf-btn" onclick="closeTera();openFeature()">Open in Store</button><button class="tf-btn primary">+ Add</button></div></div>
+            <div class="tera-chips"><span class="tera-chip">Only real-time features</span><span class="tera-chip">Add all to my dataset</span><span class="tera-chip">Explain ranking</span></div>
+          </div>
+        </div>
+        <div class="tera-input-wrap"><div class="tera-input"><span style="color:var(--tera);">✦</span><input placeholder="Ask a follow-up…"/><button class="send-btn">→</button></div></div>
+      </div>
+
+    </div>
+  </div>
+  <div class="footer-note">Feature Store · Full prototype · Repositories → Domains → Dataset</div>
+</div>
+
+<script>
+  // Search corpus for repo-wide suggestions
+  var CORPUS=[
+    {n:'customer_avg_spend_30d',t:'FLOAT',d:'Customer',c:'cust'},
+    {n:'customer_total_spend_90d',t:'FLOAT',d:'Customer',c:'cust'},
+    {n:'customer_txn_velocity_1h',t:'INT',d:'Customer',c:'cust'},
+    {n:'customer_declined_txn_count_24h',t:'INT',d:'Customer',c:'cust'},
+    {n:'segment_avg_spend_30d',t:'FLOAT',d:'Customer',c:'cust'},
+    {n:'segment_fraud_incidence_30d',t:'FLOAT',d:'Customer',c:'cust'},
+    {n:'household_total_spend_90d',t:'FLOAT',d:'Customer',c:'cust'},
+    {n:'txn_spend_velocity_1h',t:'FLOAT',d:'Transactions',c:'txn'},
+    {n:'txn_amount_zscore',t:'FLOAT',d:'Transactions',c:'txn'},
+    {n:'txn_count_last_1h',t:'INT',d:'Transactions',c:'txn'},
+    {n:'merchant_risk_score',t:'FLOAT',d:'Merchant',c:'mer'},
+    {n:'merchant_avg_spend_per_txn_30d',t:'FLOAT',d:'Merchant',c:'mer'},
+    {n:'merchant_chargeback_rate_90d',t:'FLOAT',d:'Merchant',c:'mer'},
+    {n:'account_avg_monthly_spend',t:'FLOAT',d:'Accounts',c:'acct'},
+    {n:'account_balance_current',t:'FLOAT',d:'Accounts',c:'acct'},
+    {n:'account_overdraft_count_90d',t:'INT',d:'Accounts',c:'acct'}
+  ];
+
+  function show(view){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('v-'+view).classList.add('active');
+    document.getElementById('datasetStrip').style.display=(view==='domain')?'flex':'none';
+    document.querySelectorAll('.nav-child').forEach(n=>n.classList.remove('active'));
+    if(view==='builder'||view==='saved') document.getElementById('ncWork').classList.add('active');
+    else document.getElementById('ncRepos').classList.add('active');
+    closeAll();
+    hideSuggest();
+    document.querySelector('.content').scrollTop=0;
+  }
+  function openRepo(){show('repo');}
+  function openDomain(){show('domain');}
+
+  // home explore all
+  function toggleAllRepos(){var el=document.getElementById('allRepos'),btn=document.getElementById('exploreBtn');if(el.classList.contains('show')){el.classList.remove('show');btn.innerHTML='▾ Explore all 12 repositories';}else{el.classList.add('show');btn.innerHTML='▴ Hide all repositories';}}
+  function filterRepos(v){var t=v.trim().toLowerCase();document.querySelectorAll('#allRepos .rr').forEach(function(r){if(r.getAttribute('data-name').toLowerCase().indexOf(t)>=0)r.classList.remove('hidden');else r.classList.add('hidden');});}
+
+  // ===== REPO-WIDE SEARCH (live suggestions + full results) =====
+  function repoSuggest(v){
+    var box=document.getElementById('repoSuggestBox'),list=document.getElementById('suggestList');
+    var t=v.trim().toLowerCase();
+    if(t.length<1){hideSuggest();return;}
+    var matches=CORPUS.filter(function(f){return f.n.toLowerCase().indexOf(t)>=0;}).slice(0,6);
+    if(matches.length===0){hideSuggest();return;}
+    list.innerHTML=matches.map(function(f){
+      var hl=f.n.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>');
+      var dl=f.d.toUpperCase();
+      return '<div class="suggest-row" onclick="openInDomain()"><span class="sg-name">'+hl+'</span><span class="sg-type">'+f.t+'</span><span class="sg-domain '+f.c+'">'+dl+'</span></div>';
+    }).join('');
+    document.getElementById('suggestFoot').innerText='See all '+CORPUS.filter(function(f){return f.n.toLowerCase().indexOf(t)>=0;}).length+' results for "'+v+'" →';
+    box.classList.add('show');
+  }
+  function hideSuggest(){var b=document.getElementById('repoSuggestBox');if(b)b.classList.remove('show');}
+  function runRepoSearch(term){
+    if(!term||term.trim().length===0) return;
+    hideSuggest();
+    document.getElementById('stCrumb').innerText=term;
+    document.getElementById('stSummary').innerText=term;
+    document.getElementById('repoSearch2').value=term;
+    show('search');
+    filterResults(term);
+  }
+  function filterResults(v){
+    var t=v.trim().toLowerCase();
+    var rows=document.querySelectorAll('#searchResults .srr');
+    var m=0;var doms={};
+    rows.forEach(function(r){
+      if(r.getAttribute('data-name').toLowerCase().indexOf(t)>=0){r.classList.remove('hidden');m++;doms[r.getAttribute('data-dom')]=1;}
+      else{r.classList.add('hidden');}
+    });
+    document.getElementById('srCount').innerText=m;
+    document.getElementById('srDomains').innerText=Object.keys(doms).length;
+    document.getElementById('stSummary').innerText=v;
+    document.getElementById('stCrumb').innerText=v;
+  }
+
+  function openInDomain(){
+    show('domain');domClearFilter();
+    var t=document.getElementById('targetFeature');
+    setTimeout(function(){t.scrollIntoView({behavior:'smooth',block:'center'});t.classList.add('flash');setTimeout(function(){t.classList.remove('flash');},1800);},150);
+  }
+
+  // domain tabs
+  function domTab(id){document.querySelectorAll('.domain-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelectorAll('.domain-tabcontent').forEach(c=>c.classList.remove('active'));document.getElementById('dc-'+id).classList.add('active');}
+
+  // entity collapse
+  function toggleEntity(h){h.classList.toggle('collapsed');h.nextElementSibling.classList.toggle('collapsed');}
+
+  // in-domain filter across ALL entities
+  function domFilter(v){
+    var box=document.getElementById('domSearchBox'),clear=document.getElementById('domClear'),badge=document.getElementById('domBadge'),icon=document.getElementById('domSearchIcon');
+    var t=v.trim().toLowerCase();
+    if(t.length===0){domClearFilter();return;}
+    box.classList.add('filtering');clear.style.display='inline';badge.style.display='inline';icon.style.color='var(--orange)';
+    var total=0;
+    document.querySelectorAll('#domFeatureList .eblock').forEach(function(block){
+      var rows=block.querySelectorAll('.df');var m=0;
+      rows.forEach(function(r){if(r.getAttribute('data-name').toLowerCase().indexOf(t)>=0){r.classList.remove('hidden');m++;}else{r.classList.add('hidden');}});
+      // update entity count badge and show/hide block + expand
+      var cnt=block.querySelector('.ent-count');
+      var body=block.querySelector('.entity-body');var head=block.querySelector('.entity-header');
+      if(m>0){block.classList.remove('hidden');cnt.className='ent-match';cnt.innerText=m+' matches';head.classList.remove('collapsed');body.classList.remove('collapsed');}
+      else{block.classList.add('hidden');}
+      total+=m;
+    });
+    document.getElementById('domResCount').innerHTML='<b>'+total+'</b> matches';
+    document.getElementById('domZero').classList.toggle('show',total===0);
+    document.getElementById('domZeroTerm').innerText=v;
+  }
+  function domClearFilter(){
+    var box=document.getElementById('domSearchBox');
+    document.getElementById('domSearch').value='';box.classList.remove('filtering');
+    document.getElementById('domClear').style.display='none';document.getElementById('domBadge').style.display='none';document.getElementById('domSearchIcon').style.color='var(--dim)';
+    document.querySelectorAll('#domFeatureList .df').forEach(function(r){r.classList.remove('hidden');});
+    document.querySelectorAll('#domFeatureList .eblock').forEach(function(block){block.classList.remove('hidden');});
+    // restore counts
+    var counts={'customer_id':'1,890 features','customer_segment_id':'328 features','household_id':'200 features'};
+    document.querySelectorAll('#domFeatureList .eblock').forEach(function(block){
+      var e=block.getAttribute('data-entity');var cnt=block.querySelector('.ent-count');cnt.className='ent-count';cnt.innerText=counts[e];
+    });
+    document.getElementById('domResCount').innerHTML='<b>2,418</b> features · <b>3</b> entities';
+    document.getElementById('domZero').classList.remove('show');
+  }
+
+  // filter popovers
+  function togglePop(id,e){var el=document.getElementById(id),open=el.classList.contains('show');document.querySelectorAll('.facet-pop,.more-pop').forEach(p=>p.classList.remove('show'));if(!open)el.classList.add('show');if(e)e.stopPropagation();}
+  document.addEventListener('click',function(e){
+    document.querySelectorAll('.facet-pop,.more-pop').forEach(p=>p.classList.remove('show'));
+    // hide repo suggest if click outside
+    if(!e.target.closest('.repo-search-wrap')) hideSuggest();
+  });
+
+  // feature detail
+  function openFeature(){document.getElementById('featureOverlay').classList.add('show');document.getElementById('featurePanel').classList.add('show');}
+  function closeFeature(){document.getElementById('featureOverlay').classList.remove('show');document.getElementById('featurePanel').classList.remove('show');}
+  function detailTab(e,id){e.currentTarget.parentElement.querySelectorAll('.so-tab').forEach(t=>t.classList.remove('active'));e.currentTarget.classList.add('active');document.querySelectorAll('#featurePanel .so-tabcontent').forEach(c=>c.classList.remove('active'));document.getElementById('dt-'+id).classList.add('active');}
+
+  // dataset preview
+  function openDatasetPreview(){document.getElementById('datasetOverlay').classList.add('show');document.getElementById('datasetPanel').classList.add('show');resetSel();}
+  function closeDatasetPreview(){document.getElementById('datasetOverlay').classList.remove('show');document.getElementById('datasetPanel').classList.remove('show');}
+  function toggleFeat(el){el.classList.toggle('sel');updateSel();}
+  function selectAll(){var all=document.querySelectorAll('#datasetPanel .dp-feat:not(.disabled)'),check=document.getElementById('selAllCheck');var anyUnsel=[].slice.call(all).some(function(f){return !f.classList.contains('sel');});all.forEach(function(f){if(anyUnsel)f.classList.add('sel');else f.classList.remove('sel');});check.innerHTML=anyUnsel?'✓':'';check.style.background=anyUnsel?'var(--orange)':'';check.style.borderColor=anyUnsel?'var(--orange)':'';updateSel();}
+  function updateSel(){var n=document.querySelectorAll('#datasetPanel .dp-feat.sel').length;document.getElementById('selCount').innerText=n+' selected';var b=document.getElementById('dpAddBtn');if(n>0){b.disabled=false;b.innerText='Add '+n+' feature'+(n>1?'s':'')+' to fraud_scoring_v3';}else{b.disabled=true;b.innerText='Select features to add';}}
+  function resetSel(){document.querySelectorAll('#datasetPanel .dp-feat').forEach(function(f){if(!f.classList.contains('disabled'))f.classList.remove('sel');});document.getElementById('selAllCheck').innerHTML='';document.getElementById('selAllCheck').style.background='';updateSel();}
+  function addPicked(){closeDatasetPreview();show('builder');}
+
+  // tera
+  function openTera(){document.getElementById('teraOverlay').classList.add('show');document.getElementById('teraPanel').classList.add('show');}
+  function closeTera(){document.getElementById('teraOverlay').classList.remove('show');document.getElementById('teraPanel').classList.remove('show');}
+  function closeAll(){closeFeature();closeDatasetPreview();closeTera();}
+  function genPreview(){document.getElementById('previewResult').classList.add('show');}
+</script>
+</body>
+</html>
